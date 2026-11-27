@@ -7,26 +7,86 @@
     <link rel="stylesheet" href="css/global.css" />
     <link rel="stylesheet" href="css/layout.css" />
     <style>
+      @font-face {
+        font-family: "Splatink";
+        font-weight: 400;
+        src: url(fonts/splatink-regular.otf);
+      }
+      @font-face {
+        font-family: "The Seasons";
+        font-weight: 400;
+        font-style: normal;
+        src: url(fonts/the-seasons-regular.ttf);
+      }
+      @font-face {
+        font-family: "The Seasons";
+        font-weight: 700;
+        font-style: normal;
+        src: url(fonts/the-seasons-bold.ttf);
+      }
+      @font-face {
+        font-family: "The Seasons";
+        font-weight: 400;
+        font-style: italic;
+        src: url(fonts/the-seasons-italic.ttf);
+      }
+
+      /* global.css centres every <main> with auto margins, which stops it stretching to the row's
+         height, so the strip canvas used to grow taller than the screen and get clipped. */
+      :root {
+        --nav-h: 64px;
+      }
+      header.bar img {
+        height: 42px;
+      }
+      header.bar h1 {
+        font-size: 26px;
+      }
+      #app-shell main {
+        margin: 0;
+        max-width: none;
+      }
+
+      /* Booth palette: remap the slate/purple utility colors this page uses. */
+      .bg-slate-950 { background-color: #17092f; }
+      .bg-slate-900 { background-color: #22103f; }
+      .bg-slate-800, .hover\:bg-slate-800:hover { background-color: #2a1552; }
+      .bg-slate-700, .hover\:bg-slate-700:hover { background-color: #3b1f6f; }
+      .bg-slate-950\/70 { background-color: rgb(23 9 47 / 0.7); }
+      .bg-slate-950\/60 { background-color: rgb(23 9 47 / 0.6); }
+      .bg-slate-950\/50 { background-color: rgb(23 9 47 / 0.5); }
+      .bg-slate-900\/95 { background-color: rgb(34 16 63 / 0.95); }
+      .bg-slate-900\/90 { background-color: rgb(34 16 63 / 0.9); }
+      .border-slate-800, .border-slate-800\/80 { border-color: #3b1f6f; }
+      .border-slate-700 { border-color: #4c2a8c; }
+      .border-slate-600, .hover\:border-slate-600:hover { border-color: #6d44c2; }
+      .ring-slate-700 { --tw-ring-color: #4c2a8c; }
+      .text-slate-400 { color: #bdade3; }
+      .text-slate-300 { color: #d6caf0; }
+      .text-slate-500 { color: #9b89c4; }
+      .bg-purple-600 { background-color: #5b21b6; }
+      .bg-purple-500, .hover\:bg-purple-500:hover { background-color: #6d34d4; }
+
       /* Custom scrollbar for dark studio aesthetic */
       ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: #0d0d0d;
+        background: #17092f;
       }
       ::-webkit-scrollbar-thumb {
-        background: #333333;
+        background: #4c2a8c;
         border-radius: 9999px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #4a4a4a;
+        background: #6d44c2;
       }
 
       /* Checkered transparency pattern for canvas backdrop */
       .studio-grid {
-        background-color: #0d0d0d;
-        background-image: radial-gradient(#262626 1px, transparent 1px);
+        background-color: #17092f;
+        background-image: radial-gradient(#3b1f6f 1px, transparent 1px);
         background-size: 20px 20px;
       }
 
@@ -312,6 +372,12 @@
                 >
                   + Bold Badge
                 </button>
+                <button
+                  onclick="addTextElement('Smile!', '#f6e8d2', 'Splatink')"
+                  class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl py-2 px-3 text-xs font-semibold text-orange-200 transition"
+                >
+                  + Ink Text
+                </button>
               </div>
             </div>
 
@@ -353,7 +419,7 @@
                 >Footer Branding</label
               >
               <div>
-                <span class="text-[11px] text-slate-400">Main Title (Script)</span>
+                <span class="text-[11px] text-slate-400">Main Title (Splatink)</span>
                 <input
                   type="text"
                   id="brand-title-input"
@@ -367,7 +433,7 @@
                 <input
                   type="text"
                   id="brand-subtitle-input"
-                  value="GFMINHS Multimedia Arts Club"
+                  value="Digital Multimedia Arts Club"
                   oninput="updateStripBranding()"
                   class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
                 />
@@ -473,8 +539,8 @@
             >
               <canvas
                 id="a4-canvas"
-                width="1754"
-                height="1240"
+                width="3508"
+                height="2480"
                 class="max-w-full max-h-[64vh] w-auto h-auto block cursor-pointer"
               ></canvas>
               <div
@@ -484,7 +550,7 @@
                   <span><strong>Paper:</strong> A4 Landscape (297mm × 210mm)</span>
                   <span class="hidden sm:inline">•</span>
                   <span class="hidden sm:inline"
-                    ><strong>Layout:</strong> 6 × (2×6 in) Photo Strips</span
+                    ><strong>Layout:</strong> 6 photo strips (about 46 × 139 mm each)</span
                   >
                 </div>
                 <div class="flex items-center gap-2">
@@ -908,7 +974,7 @@
       /**
        * DigiClick Photobooth Print & A4 Layout Studio
        * Logical Strip Resolution: 600 x 1800 px (1:3 aspect ratio = exact 2x6 inches at 300 DPI)
-       * Logical A4 Landscape Resolution: 1754 x 1240 px (exact 297mm x 210mm ratio)
+       * Logical A4 Landscape Resolution: 3508 x 2480 px (300 DPI, 297mm x 210mm)
        */
 
       const STRIP_W = 600;
@@ -916,19 +982,20 @@
 
       // 3 vertically stacked photo slots matching the DigiClick 2x6 layout proportions
       const PHOTO_SLOTS = [
-        { index: 0, x: 52, y: 42, w: 496, h: 472 },
-        { index: 1, x: 52, y: 552, w: 496, h: 472 },
-        { index: 2, x: 52, y: 1062, w: 496, h: 472 },
+        { index: 0, x: 60, y: 46, w: 480, h: 480 },
+        { index: 1, x: 60, y: 562, w: 480, h: 480 },
+        { index: 2, x: 60, y: 1078, w: 480, h: 480 },
       ];
 
       const THEMES = [
         {
           id: "digiclick",
           name: "DigiClick Purple",
-          topColor: "#2d1b36",
-          midColor: "#3a1d4a",
-          botColor: "#130c1a",
-          accent: "#e8b48a",
+          topColor: "#4a2a3a",
+          midColor: "#46205f",
+          botColor: "#24102f",
+          accent: "#e8a06a",
+          frame: "#f6e8d2",
           textMain: "#f5efe6",
           textSub: "#e2d6e8",
         },
@@ -939,6 +1006,7 @@
           midColor: "#1e1b4b",
           botColor: "#0d0d0d",
           accent: "#fbbf24",
+          frame: "#fde68a",
           textMain: "#fef3c7",
           textSub: "#cbd5e1",
         },
@@ -949,6 +1017,7 @@
           midColor: "#831843",
           botColor: "#1f0710",
           accent: "#fbcfe8",
+          frame: "#fbcfe8",
           textMain: "#fff1f2",
           textSub: "#fecdd3",
         },
@@ -959,6 +1028,7 @@
           midColor: "#f5f5f4",
           botColor: "#e7e5e4",
           accent: "#a855f7",
+          frame: "#d6d3d1",
           textMain: "#1c1917",
           textSub: "#57534e",
         },
@@ -1008,7 +1078,7 @@
           id: index,
           themeId: "digiclick",
           brandTitle: "DigiClick",
-          brandSubtitle: "GFMINHS Multimedia Arts Club",
+          brandSubtitle: "Digital Multimedia Arts Club",
           showIcon: true,
           showWireframe: true,
           slots: [
@@ -1707,6 +1777,10 @@
         const theme = THEMES.find((t) => t.id === stripData.themeId) || THEMES[0];
 
         ctx.save();
+        // Round the strip's corners like the Canva design.
+        ctx.beginPath();
+        ctx.roundRect(0, 0, STRIP_W, STRIP_H, 30);
+        ctx.clip();
 
         // 1. Background Gradient
         const bgGrad = ctx.createLinearGradient(0, 0, STRIP_W * 0.3, STRIP_H);
@@ -1875,32 +1949,41 @@
           ctx.drawImage(customOverlayImg, 0, 0, STRIP_W, STRIP_H);
         }
 
-        // 5. Footer Branding ("DigiClick" + "GFMINHS Multimedia Arts Club" + Camera/Clapperboard Icon)
+        // 5. Cream frame, like the Canva strip
         ctx.save();
-        ctx.textAlign = "center";
+        ctx.strokeStyle = theme.frame || theme.textMain;
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.roundRect(6, 6, STRIP_W - 12, STRIP_H - 12, 26);
+        ctx.stroke();
+        ctx.restore();
+
+        // 6. Footer branding: "DigiClick" in Splatink, subtitle in The Seasons, clapper icon
+        ctx.save();
         ctx.textBaseline = "middle";
-
         if (stripData.brandTitle) {
+          const fam = '"Splatink", "Caveat", cursive';
+          ctx.textAlign = "center";
+          ctx.font = `400 ${fitFont(ctx, stripData.brandTitle, fam, 400, 340, 120)}px ${fam}`;
           ctx.fillStyle = theme.textMain;
-          ctx.font = "700 84px Caveat, cursive";
-          ctx.fillText(stripData.brandTitle, STRIP_W / 2 - 8, 1632);
+          ctx.fillText(stripData.brandTitle, STRIP_W / 2, 1640);
         }
-
         const subText = stripData.brandSubtitle || "";
-        ctx.font = '600 23px "Playfair Display", Georgia, serif';
-        ctx.fillStyle = theme.textSub;
-        const textWidth = ctx.measureText(subText).width;
-        const iconOffset = stripData.showIcon ? 26 : 0;
-        ctx.fillText(subText, STRIP_W / 2 - iconOffset, 1706);
-
-        if (stripData.showIcon) {
-          const ix = STRIP_W / 2 + textWidth / 2 - 12;
-          const iy = 1692;
-          drawCameraClapperIcon(ctx, ix, iy, theme.textMain);
+        if (subText) {
+          const fam = '"The Seasons", "Playfair Display", Georgia, serif',
+            iconW = stripData.showIcon ? 38 : 0,
+            gap = stripData.showIcon ? 14 : 0;
+          ctx.font = `400 ${fitFont(ctx, subText, fam, 400, 490 - iconW - gap, 34)}px ${fam}`;
+          const tw = ctx.measureText(subText).width,
+            left = STRIP_W / 2 - (tw + gap + iconW) / 2;
+          ctx.textAlign = "left";
+          ctx.fillStyle = theme.textSub;
+          ctx.fillText(subText, left, 1722);
+          if (stripData.showIcon) drawCameraClapperIcon(ctx, left + tw + gap, 1705, theme.textMain);
         }
         ctx.restore();
 
-        // 6. Interactive Canvas Elements (Stickers, Shapes, Text)
+        // 7. Interactive Canvas Elements (Stickers, Shapes, Text)
         stripData.elements.forEach((el) => {
           ctx.save();
           ctx.translate(el.x, el.y);
@@ -1916,7 +1999,11 @@
             const fontFamily =
               el.font === "Caveat"
                 ? "700 62px Caveat, cursive"
-                : '700 42px "Space Grotesk", sans-serif';
+                : el.font === "Splatink"
+                  ? '400 84px "Splatink", cursive'
+                  : el.font === "The Seasons"
+                    ? '400 50px "The Seasons", Georgia, serif'
+                    : '700 42px "Space Grotesk", sans-serif';
             ctx.font = fontFamily;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -1957,6 +2044,13 @@
       }
 
       // Vector Helpers for Strip Graphics
+      // Size a font so the text is targetW wide, never larger than maxSize.
+      function fitFont(ctx, text, family, weight, targetW, maxSize) {
+        ctx.font = `${weight} 100px ${family}`;
+        const w = ctx.measureText(text).width || 1;
+        return Math.max(12, Math.min(maxSize, (100 * targetW) / w));
+      }
+
       function drawFourPointSparkle(ctx, cx, cy, r) {
         ctx.beginPath();
         ctx.moveTo(cx, cy - r);
@@ -2060,8 +2154,8 @@
 
       // Render Full A4 Landscape Sheet (6 x 2x6 strips arranged cleanly across A4)
       function renderA4Canvas() {
-        const W = a4Canvas.width; // 1754 (297mm)
-        const H = a4Canvas.height; // 1240 (210mm)
+        const W = a4Canvas.width; // 3508 (297mm at 300 DPI)
+        const H = a4Canvas.height; // 2480 (210mm at 300 DPI)
 
         a4Ctx.save();
         a4Ctx.fillStyle = "#ffffff";
@@ -2069,10 +2163,12 @@
 
         // 6 columns side-by-side on A4 landscape:
         // Each strip maintains exact 1:3 (2x6 in) aspect ratio
-        const marginX = 38;
-        const gapX = 16;
-        const stripDisplayW = Math.floor((W - marginX * 2 - gapX * 5) / 6); // ~266px
-        const stripDisplayH = stripDisplayW * 3; // ~798px (exact 1:3 ratio)
+        // Six full-size 2 in strips (600 px) would be wider than A4, so they print at about 92%:
+        // each strip is roughly 46 x 139 mm.
+        const marginX = 48;
+        const gapX = 24;
+        const stripDisplayW = Math.floor((W - marginX * 2 - gapX * 5) / 6); // ~548px
+        const stripDisplayH = stripDisplayW * 3; // ~1644px (exact 1:3 ratio)
         const startY = Math.floor((H - stripDisplayH) / 2);
 
         const showCutMarks = document.getElementById("cut-marks-toggle")?.checked ?? true;
@@ -2080,12 +2176,12 @@
         // Subtle header guide text in margin
         if (showCutMarks) {
           a4Ctx.fillStyle = "#94a3b8";
-          a4Ctx.font = "600 18px Inter, sans-serif";
+          a4Ctx.font = "600 34px Inter, sans-serif";
           a4Ctx.textAlign = "center";
           a4Ctx.fillText(
-            "DIGICLICK PHOTOBOOTH • A4 PRINT SHEET (6 × 2×6 INCH STRIPS) • TRIM ALONG GUIDES",
+            "DIGICLICK PHOTOBOOTH • A4 PRINT SHEET • 6 STRIPS, ABOUT 46 × 139 MM EACH • TRIM ALONG GUIDES",
             W / 2,
-            startY - 36,
+            startY - 60,
           );
         }
 
@@ -2105,15 +2201,15 @@
           if (showCutMarks) {
             a4Ctx.save();
             a4Ctx.strokeStyle = "#64748b";
-            a4Ctx.lineWidth = 1.5;
-            a4Ctx.setLineDash([6, 4]);
-            a4Ctx.strokeRect(x - 1, y - 1, stripDisplayW + 2, stripDisplayH + 2);
+            a4Ctx.lineWidth = 3;
+            a4Ctx.setLineDash([12, 8]);
+            a4Ctx.strokeRect(x - 2, y - 2, stripDisplayW + 4, stripDisplayH + 4);
 
             // Corner ticks
             a4Ctx.setLineDash([]);
             a4Ctx.strokeStyle = "#0d0d0d";
-            a4Ctx.lineWidth = 2;
-            const tick = 14;
+            a4Ctx.lineWidth = 4;
+            const tick = 28;
             // Top-left tick
             a4Ctx.beginPath();
             a4Ctx.moveTo(x - tick, y);
@@ -2272,8 +2368,8 @@
             "px-2.5 py-1 rounded text-xs font-semibold text-slate-400 hover:text-white";
         } else {
           img.src = getCleanA4DataURL();
-          title.textContent = "Preview: Full A4 Sheet (6 Strips of 2×6 Inches)";
-          meta.textContent = "Paper Size: A4 Landscape (297mm × 210mm • 6 Prints)";
+          title.textContent = "Preview: Full A4 Sheet (6 Strips)";
+          meta.textContent = "Paper Size: A4 Landscape (297mm × 210mm • 300 DPI • 6 Prints, about 46 × 139 mm each)";
           btnA4.className = "px-2.5 py-1 rounded text-xs font-semibold bg-purple-600 text-white";
           btnStrip.className =
             "px-2.5 py-1 rounded text-xs font-semibold text-slate-400 hover:text-white";
@@ -2299,6 +2395,8 @@
         try {
           await Promise.all(
             [
+              "400 60px Splatink",
+              '400 30px "The Seasons"',
               "700 20px Caveat",
               "600 20px Inter",
               '600 20px "Playfair Display"',
