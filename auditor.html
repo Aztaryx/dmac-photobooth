@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="css/global.css" />
     <title>DigiClick: Auditor</title>
   </head>
@@ -12,27 +12,22 @@
       <div id="v"></div>
       <dialog id="dlg">
         <div id="dc"></div>
-        <form method="dialog">
-          <button>Close</button>
-        </form>
+        <form method="dialog"><button>Close</button></form>
       </dialog>
     </main>
     <script src="js/vendor/supabase.js"></script>
     <script type="module">
       import { boot, ask, esc } from "./js/auth.js";
       import { sb } from "./js/supabase.js";
-
       const op = await boot("auditor", "Auditor");
-      const v = document.getElementById("v");
-      const $ = (id) => document.getElementById(id);
+      const v = document.getElementById("v"),
+        $ = (id) => document.getElementById(id);
       const A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
       const gen = () => {
         let o = "";
-        while (o.length < 6) {
-          for (const x of crypto.getRandomValues(new Uint8Array(12))) {
+        while (o.length < 6)
+          for (const x of crypto.getRandomValues(new Uint8Array(12)))
             if (x < 248 && o.length < 6) o += A[x % 31];
-          }
-        }
         return o;
       };
       const dash = (p) => p.slice(0, 3) + "-" + p.slice(3);
@@ -45,13 +40,12 @@
                 (r, i) =>
                   "<tr>" +
                   Object.values(r)
-                    .map((c) => {
-                      const value =
-                        c !== null && typeof c === "object"
-                          ? JSON.stringify(c)
-                          : c;
-                      return "<td>" + esc(value) + "</td>";
-                    })
+                    .map(
+                      (c) =>
+                        "<td>" +
+                        esc(c !== null && typeof c === "object" ? JSON.stringify(c) : c) +
+                        "</td>",
+                    )
                     .join("") +
                   (act
                     ? `<td><button data-h="${i}">History</button> <button data-e="${i}">Edit</button></td>`
@@ -60,38 +54,22 @@
               )
               .join("")}</table></div>`
           : "<p class=empty>Nothing here.</p>";
-
       const view = {
         async dash() {
           const [t, p] = await Promise.all([
             sb.from("tickets").select("status,package"),
             sb.from("payments").select("kind,amount_php"),
           ]);
-          if (t.error || p.error)
-            return (v.textContent = (t.error || p.error).message);
-
+          if (t.error || p.error) return (v.textContent = (t.error || p.error).message);
           const n = {};
           t.data.forEach((x) => (n[x.status] = (n[x.status] || 0) + 1));
           const pay = p.data
-            .filter((x) => x.kind === "payment")
-            .reduce((s, x) => s + x.amount_php, 0);
-          const ref = p.data
-            .filter((x) => x.kind === "refund")
-            .reduce((s, x) => s - x.amount_php, 0);
-          const S = (l, x) =>
-            `<div class="card"><div class="stat">${x}</div>${l}</div>`;
-
-          v.innerHTML = `<div class="stats">${S("Cash collected (Php)", pay - ref)}${S("Refunds (Php)", ref)}${S("Voided tickets", n.void || 0)}${S("All tickets", t.data.length)}</div><h2>Tickets by status</h2><div class="stats">${[
-            "awaiting_payment",
-            "paid",
-            "editing",
-            "ready",
-            "delivered",
-          ]
-            .map((s) => S(s.replace("_", " "), n[s] || 0))
-            .join("")}</div>`;
+              .filter((x) => x.kind === "payment")
+              .reduce((s, x) => s + x.amount_php, 0),
+            ref = p.data.filter((x) => x.kind === "refund").reduce((s, x) => s - x.amount_php, 0);
+          const S = (l, x) => `<div class="card"><div class="stat">${x}</div>${l}</div>`;
+          v.innerHTML = `<div class="stats">${S("Cash collected (Php)", pay - ref)}${S("Refunds (Php)", ref)}${S("Voided tickets", n.void || 0)}${S("All tickets", t.data.length)}</div><h2>Tickets by status</h2><div class="stats">${["awaiting_payment", "paid", "editing", "ready", "delivered"].map((s) => S(s.replace("_", " "), n[s] || 0)).join("")}</div>`;
         },
-
         async raw() {
           v.innerHTML = `<select id="tb" style="max-width:260px">${[
             "tickets",
@@ -129,34 +107,27 @@
             const b = e.target.closest("button");
             if (!b) return;
             const t = $("tb").value;
-
             if (b.dataset.h !== undefined) {
-              const r = rows[b.dataset.h];
-              const h = await sb
-                .from("audit_log")
-                .select("*")
-                .eq("row_id", String(r.id ?? r.package))
-                .order("at", { ascending: false });
+              const r = rows[b.dataset.h],
+                h = await sb
+                  .from("audit_log")
+                  .select("*")
+                  .eq("row_id", String(r.id ?? r.package))
+                  .order("at", { ascending: false });
               $("dc").innerHTML =
-                "<h3>History</h3>" +
-                (h.error ? esc(h.error.message) : table(h.data));
+                "<h3>History</h3>" + (h.error ? esc(h.error.message) : table(h.data));
               $("dlg").showModal();
             }
-
             if (b.dataset.e !== undefined) {
-              const r = rows[b.dataset.e];
-              const f = await ask("Which field to change?", {
-                label: "Field name",
-              });
+              const r = rows[b.dataset.e],
+                f = await ask("Which field to change?", { label: "Field name" });
               if (!f) return;
               const nv = await ask("New value for " + f, {
                 label: "Value",
                 value: r[f.trim()] ?? "",
               });
               if (nv === null) return;
-              const why = await ask("Why are you changing it?", {
-                label: "Reason (required)",
-              });
+              const why = await ask("Why are you changing it?", { label: "Reason (required)" });
               if (!why?.trim()) return;
               let val = nv;
               try {
@@ -173,12 +144,10 @@
             }
           };
         },
-
         async exc() {
           const r = await sb.from("v_exceptions").select("*");
           v.innerHTML = r.error ? esc(r.error.message) : table(r.data);
         },
-
         async acc() {
           const r = await sb.from("role_pins").select("*");
           if (r.error) return (v.textContent = r.error.message);
@@ -194,9 +163,7 @@
             if (!b) return;
             if (b.dataset.s && b.dataset.p) {
               const s = v.querySelector(`[data-r=${b.dataset.s}]`);
-              s.textContent = s.textContent.includes("•")
-                ? dash(b.dataset.p)
-                : "••• •••";
+              s.textContent = s.textContent.includes("•") ? dash(b.dataset.p) : "••• •••";
               b.textContent = s.textContent.includes("•") ? "Reveal" : "Hide";
             }
             if (b.dataset.c && b.dataset.p) {
@@ -206,15 +173,9 @@
             if (b.dataset.g) {
               const k = b.dataset.g;
               if (
-                !(
-                  await ask(
-                    "Regenerate the " +
-                      k +
-                      " PIN? Everyone signed in as " +
-                      k +
-                      " is signed out.",
-                  )
-                )
+                !(await ask(
+                  "Regenerate the " + k + " PIN? Everyone signed in as " + k + " is signed out.",
+                ))
               )
                 return;
               const { error } = await sb.rpc("regenerate_pin", {
@@ -227,12 +188,7 @@
           };
         },
       };
-      const names = {
-        dash: "Dashboard",
-        raw: "Raw tables",
-        exc: "Exceptions",
-        acc: "Access",
-      };
+      const names = { dash: "Dashboard", raw: "Raw tables", exc: "Exceptions", acc: "Access" };
       $("tabs").innerHTML = Object.entries(names)
         .map(([k, l]) => `<button data-t="${k}">${l}</button>`)
         .join("");
@@ -241,13 +197,10 @@
         v.innerHTML = "";
         $("tabs")
           .querySelectorAll("button")
-          .forEach((b) =>
-            b.setAttribute("aria-selected", b.dataset.t === k),
-          );
+          .forEach((b) => b.setAttribute("aria-selected", b.dataset.t === k));
         view[k]();
       };
-      $("tabs").onclick = (e) =>
-        e.target.dataset.t && show(e.target.dataset.t);
+      $("tabs").onclick = (e) => e.target.dataset.t && show(e.target.dataset.t);
       show("dash");
     </script>
   </body>

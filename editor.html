@@ -1,33 +1,98 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/global.css"><title>DigiClick: Editor</title></head><body>
-<main><p><button class="go" onclick="location='layout.html'">Open print layout</button></p><div class="cols"><section class="col"><h2>To edit</h2><div id="paid"></div></section><section class="col"><h2>Editing</h2><div id="editing"></div></section><section class="col"><h2>Ready: print and delivery</h2><div id="ready"></div></section></div></main>
-<script src="js/vendor/supabase.js"></script>
-<script type="module">
-import { boot, ask, esc } from "./js/auth.js"; import { sb } from "./js/supabase.js"; import { send, onSynced } from "./js/outbox.js";
-const op = await boot("editor", "Editor");
-const P = { facebook_messenger: "Messenger", instagram: "Instagram", gmail: "Gmail", other: "Other" };
-function btns(x) {
-  const b = (d, t, c = "go") => `<button class="${c}" data-do="${d}" data-id="${x.id}" data-ch="${x.contact_platform}">${t}</button>`;
-  if (x.status === "paid") return b("editing", "Start editing");
-  if (x.status === "editing") return b("ready", "Mark ready");
-  const o = [];
-  if (x.print_status === "to_print") o.push(b("printed", "Mark printed"));
-  if (x.print_status === "printed") o.push(b("handed_over", "Mark handed over"));
-  if (x.print_status === "not_applicable") o.push(b("send", "Log digital send", ""), b("delivered", "Mark delivered"));
-  return o.join("");
-}
-async function load() {
-  const { data, error } = await sb.from("tickets").select("id,ticket_code,name,package,status,print_status,contact_platform,contact_platform_other,contact_username,allow_page_use").in("status", ["paid", "editing", "ready"]).order("created_at");
-  if (error) return;
-  for (const s of ["paid", "editing", "ready"])
-    document.getElementById(s).innerHTML = data.filter(x => x.status === s).map(x => `<div class="card"><div class="c">${esc(x.ticket_code)}${x.allow_page_use ? "" : "<span class=badge>Do not post</span>"}</div>${esc(x.name)}<br><small>${x.package.replace("_", " ")}${s === "ready" ? ", " + (x.print_status === "not_applicable" ? "send to " + (x.contact_platform === "other" ? esc(x.contact_platform_other) : P[x.contact_platform]) + ": " + esc(x.contact_username) : x.print_status.replace("_", " ")) : ""}</small><div class="row">${btns(x)}</div></div>`).join("") || "<p class=empty>Nothing here.</p>";
-}
-document.querySelector("main").onclick = async e => {
-  const b = e.target.closest("button"); if (!b) return; const id = b.dataset.id, d = b.dataset.do;
-  if (["editing", "ready", "delivered"].includes(d)) await send("set_ticket_status", { p_ticket_id: id, p_status: d, p_operator: op });
-  else if (d === "send") { const n = await ask("Log digital send", { label: "Note (optional, such as sent on Messenger)" }); if (n === null) return;
-    await send("log_delivery", { p_id: crypto.randomUUID(), p_ticket_id: id, p_channel: b.dataset.ch, p_note: n || null, p_operator: op }); }
-  else await send("set_print_status", { p_ticket_id: id, p_print_status: d, p_operator: op });
-  load();
-};
-onSynced(load); load(); setInterval(load, 10000);
-</script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="css/global.css" />
+    <title>DigiClick: Editor</title>
+  </head>
+  <body>
+    <main>
+      <p><button class="go" onclick="location = 'layout.html'">Open print layout</button></p>
+      <div class="cols">
+        <section class="col">
+          <h2>To edit</h2>
+          <div id="paid"></div>
+        </section>
+        <section class="col">
+          <h2>Editing</h2>
+          <div id="editing"></div>
+        </section>
+        <section class="col">
+          <h2>Ready: print and delivery</h2>
+          <div id="ready"></div>
+        </section>
+      </div>
+    </main>
+    <script src="js/vendor/supabase.js"></script>
+    <script type="module">
+      import { boot, ask, esc } from "./js/auth.js";
+      import { sb } from "./js/supabase.js";
+      import { send, onSynced } from "./js/outbox.js";
+      const op = await boot("editor", "Editor");
+      const P = {
+        facebook_messenger: "Messenger",
+        instagram: "Instagram",
+        gmail: "Gmail",
+        other: "Other",
+      };
+      function btns(x) {
+        const b = (d, t, c = "go") =>
+          `<button class="${c}" data-do="${d}" data-id="${x.id}" data-ch="${x.contact_platform}">${t}</button>`;
+        if (x.status === "paid") return b("editing", "Start editing");
+        if (x.status === "editing") return b("ready", "Mark ready");
+        const o = [];
+        if (x.print_status === "to_print") o.push(b("printed", "Mark printed"));
+        if (x.print_status === "printed") o.push(b("handed_over", "Mark handed over"));
+        if (x.print_status === "not_applicable")
+          o.push(b("send", "Log digital send", ""), b("delivered", "Mark delivered"));
+        return o.join("");
+      }
+      async function load() {
+        const { data, error } = await sb
+          .from("tickets")
+          .select(
+            "id,ticket_code,name,package,status,print_status,contact_platform,contact_platform_other,contact_username,allow_page_use",
+          )
+          .in("status", ["paid", "editing", "ready"])
+          .order("created_at");
+        if (error) return;
+        for (const s of ["paid", "editing", "ready"])
+          document.getElementById(s).innerHTML =
+            data
+              .filter((x) => x.status === s)
+              .map(
+                (x) =>
+                  `<div class="card"><div class="c">${esc(x.ticket_code)}${x.allow_page_use ? "" : "<span class=badge>Do not post</span>"}</div>${esc(x.name)}<br><small>${x.package.replace("_", " ")}${s === "ready" ? ", " + (x.print_status === "not_applicable" ? "send to " + (x.contact_platform === "other" ? esc(x.contact_platform_other) : P[x.contact_platform]) + ": " + esc(x.contact_username) : x.print_status.replace("_", " ")) : ""}</small><div class="row">${btns(x)}</div></div>`,
+              )
+              .join("") || "<p class=empty>Nothing here.</p>";
+      }
+      document.querySelector("main").onclick = async (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        const id = b.dataset.id,
+          d = b.dataset.do;
+        if (["editing", "ready", "delivered"].includes(d))
+          await send("set_ticket_status", { p_ticket_id: id, p_status: d, p_operator: op });
+        else if (d === "send") {
+          const n = await ask("Log digital send", {
+            label: "Note (optional, such as sent on Messenger)",
+          });
+          if (n === null) return;
+          await send("log_delivery", {
+            p_id: crypto.randomUUID(),
+            p_ticket_id: id,
+            p_channel: b.dataset.ch,
+            p_note: n || null,
+            p_operator: op,
+          });
+        } else
+          await send("set_print_status", { p_ticket_id: id, p_print_status: d, p_operator: op });
+        load();
+      };
+      onSynced(load);
+      load();
+      setInterval(load, 10000);
+    </script>
+  </body>
+</html>

@@ -1,32 +1,117 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DigiClick: Cashier</title><link rel="stylesheet" href="css/global.css"></head><body>
-<main><div class="cols"><section class="col"><h2>Awaiting payment</h2><div id="a"></div></section><section class="col"><h2>Paid</h2><div id="p"></div></section></div></main>
-<script src="js/vendor/supabase.js"></script>
-<script type="module">
-import { boot, ask } from "./js/auth.js"; import { sb } from "./js/supabase.js"; import { send, onSynced } from "./js/outbox.js";
-const op = await boot("cashier", "Cashier");
-const L = { digital: "Digital", physical_week: "Physical, next week", physical_day: "Physical, same day" };
-let price = { digital: 20, physical_week: 30, physical_day: 45 };
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
-async function load() {
-  const [t, p, pl] = await Promise.all([
-    sb.from("tickets").select("id,ticket_code,name,package,status").in("status", ["awaiting_payment", "paid"]).order("created_at"),
-    sb.from("payments").select("ticket_id,amount_php"), sb.from("price_list").select("package,price_php")]);
-  if (t.error) return; pl.data?.forEach(r => (price[r.package] = r.price_php));
-  const net = {}; p.data?.forEach(r => (net[r.ticket_id] = (net[r.ticket_id] || 0) + r.amount_php));
-  for (const [id, st] of [["a", "awaiting_payment"], ["p", "paid"]]) {
-    const rows = t.data.filter(x => x.status === st);
-    document.getElementById(id).innerHTML = rows.map(x => `<div class="card"><div class="c">${esc(x.ticket_code)}</div>${esc(x.name)}<br><small>${L[x.package]}, Php ${st === "paid" ? net[x.id] ?? 0 : price[x.package]}</small>
-      <div class="row">${st === "awaiting_payment" ? `<button class="go" data-do="pay" data-id="${x.id}" data-pk="${x.package}">Mark paid</button>` : x.package === "physical_day" ? `<button data-do="defer" data-id="${x.id}">Move to next week</button>` : ""}<button class="warn" data-do="void" data-id="${x.id}">Void</button></div></div>`).join("") || `<p class="empty">${st === "paid" ? "No paid tickets yet." : "No one waiting to pay."}</p>`;
-  }
-}
-document.querySelector("main").onclick = async e => {
-  const b = e.target.closest("button"); if (!b) return; const id = b.dataset.id;
-  if (b.dataset.do === "pay") { const a = await ask("Cash received (Php)", { label: "Amount", type: "number", value: price[b.dataset.pk] }); if (a === null) return;
-    await send("record_payment", { p_id: crypto.randomUUID(), p_ticket_id: id, p_amount_php: Math.round(+a), p_operator: op, p_device_created_at: new Date().toISOString() }); }
-  if (b.dataset.do === "void") { const r = await ask("Void this ticket?", { label: "Reason (required)" }); if (!r?.trim()) return; await send("void_ticket", { p_ticket_id: id, p_reason: r.trim(), p_operator: op }); }
-  if (b.dataset.do === "defer") { if (!await ask("Move to next week and refund Php " + (price.physical_day - price.physical_week) + "?")) return;
-    await send("defer_to_next_week", { p_ticket_id: id, p_refund_id: crypto.randomUUID(), p_operator: op, p_device_created_at: new Date().toISOString() }); }
-  load();
-};
-onSynced(load); load(); setInterval(load, 10000);
-</script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DigiClick: Cashier</title>
+    <link rel="stylesheet" href="css/global.css" />
+  </head>
+  <body>
+    <main>
+      <div class="cols">
+        <section class="col">
+          <h2>Awaiting payment</h2>
+          <div id="a"></div>
+        </section>
+        <section class="col">
+          <h2>Paid</h2>
+          <div id="p"></div>
+        </section>
+      </div>
+    </main>
+    <script src="js/vendor/supabase.js"></script>
+    <script type="module">
+      import { boot, ask } from "./js/auth.js";
+      import { sb } from "./js/supabase.js";
+      import { send, onSynced } from "./js/outbox.js";
+      const op = await boot("cashier", "Cashier");
+      const L = {
+        digital: "Digital",
+        physical_week: "Physical, next week",
+        physical_day: "Physical, same day",
+      };
+      let price = { digital: 20, physical_week: 30, physical_day: 45 };
+      const esc = (s) =>
+        String(s).replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      async function load() {
+        const [t, p, pl] = await Promise.all([
+          sb
+            .from("tickets")
+            .select("id,ticket_code,name,package,status")
+            .in("status", ["awaiting_payment", "paid"])
+            .order("created_at"),
+          sb.from("payments").select("ticket_id,amount_php"),
+          sb.from("price_list").select("package,price_php"),
+        ]);
+        if (t.error) return;
+        pl.data?.forEach((r) => (price[r.package] = r.price_php));
+        const net = {};
+        p.data?.forEach((r) => (net[r.ticket_id] = (net[r.ticket_id] || 0) + r.amount_php));
+        for (const [id, st] of [
+          ["a", "awaiting_payment"],
+          ["p", "paid"],
+        ]) {
+          const rows = t.data.filter((x) => x.status === st);
+          document.getElementById(id).innerHTML =
+            rows
+              .map(
+                (
+                  x,
+                ) => `<div class="card"><div class="c">${esc(x.ticket_code)}</div>${esc(x.name)}<br><small>${L[x.package]}, Php ${st === "paid" ? (net[x.id] ?? 0) : price[x.package]}</small>
+      <div class="row">${st === "awaiting_payment" ? `<button class="go" data-do="pay" data-id="${x.id}" data-pk="${x.package}">Mark paid</button>` : x.package === "physical_day" ? `<button data-do="defer" data-id="${x.id}">Move to next week</button>` : ""}<button class="warn" data-do="void" data-id="${x.id}">Void</button></div></div>`,
+              )
+              .join("") ||
+            `<p class="empty">${st === "paid" ? "No paid tickets yet." : "No one waiting to pay."}</p>`;
+        }
+      }
+      document.querySelector("main").onclick = async (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        const id = b.dataset.id;
+        if (b.dataset.do === "pay") {
+          const a = await ask("Cash received (Php)", {
+            label: "Amount",
+            type: "number",
+            value: price[b.dataset.pk],
+          });
+          if (a === null) return;
+          await send("record_payment", {
+            p_id: crypto.randomUUID(),
+            p_ticket_id: id,
+            p_amount_php: Math.round(+a),
+            p_operator: op,
+            p_device_created_at: new Date().toISOString(),
+          });
+        }
+        if (b.dataset.do === "void") {
+          const r = await ask("Void this ticket?", { label: "Reason (required)" });
+          if (!r?.trim()) return;
+          await send("void_ticket", { p_ticket_id: id, p_reason: r.trim(), p_operator: op });
+        }
+        if (b.dataset.do === "defer") {
+          if (
+            !(await ask(
+              "Move to next week and refund Php " +
+                (price.physical_day - price.physical_week) +
+                "?",
+            ))
+          )
+            return;
+          await send("defer_to_next_week", {
+            p_ticket_id: id,
+            p_refund_id: crypto.randomUUID(),
+            p_operator: op,
+            p_device_created_at: new Date().toISOString(),
+          });
+        }
+        load();
+      };
+      onSynced(load);
+      load();
+      setInterval(load, 10000);
+    </script>
+  </body>
+</html>

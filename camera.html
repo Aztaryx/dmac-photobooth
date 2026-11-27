@@ -1,18 +1,55 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/global.css"><title>DigiClick: Camera</title></head><body>
-<main><p class="empty">Photos stay on this device. The check marks below are saved on this device only.</p><div id="q"></div></main>
-<script src="js/vendor/supabase.js"></script>
-<script type="module">
-import { boot, esc } from "./js/auth.js"; import { sb } from "./js/supabase.js";
-await boot("camera", "Camera");
-const L = { digital: "Digital", physical_week: "Physical, next week", physical_day: "Physical, same day" };
-const shot = new Set(JSON.parse(localStorage.dc_shot || "[]"));
-async function load() {
-  const { data, error } = await sb.from("tickets").select("id,ticket_code,name,package,status").eq("status", "paid").order("created_at");
-  if (error) return;
-  const all = [...data].sort((a, b) => shot.has(a.id) - shot.has(b.id));
-  q.innerHTML = all.map(x => `<div class="card ${shot.has(x.id) ? "done" : ""}"><div class="c">${esc(x.ticket_code)}</div>${esc(x.name)}<br><small>${L[x.package]}, 3 photos</small><div class="row"><button class="${shot.has(x.id) ? "" : "go"}" data-id="${x.id}">${shot.has(x.id) ? "Undo photographed" : "Photographed"}</button></div></div>`).join("") || "<p class=empty>No paid tickets waiting.</p>";
-}
-const q = document.getElementById("q");
-q.onclick = e => { const id = e.target.closest("button")?.dataset.id; if (!id) return; shot.has(id) ? shot.delete(id) : shot.add(id); localStorage.dc_shot = JSON.stringify([...shot]); load(); };
-load(); setInterval(load, 10000);
-</script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="css/global.css" />
+    <title>DigiClick: Camera</title>
+  </head>
+  <body>
+    <main>
+      <p class="empty">
+        Photos stay on this device. The check marks below are saved on this device only.
+      </p>
+      <div id="q"></div>
+    </main>
+    <script src="js/vendor/supabase.js"></script>
+    <script type="module">
+      import { boot, esc } from "./js/auth.js";
+      import { sb } from "./js/supabase.js";
+      await boot("camera", "Camera");
+      const L = {
+        digital: "Digital",
+        physical_week: "Physical, next week",
+        physical_day: "Physical, same day",
+      };
+      const shot = new Set(JSON.parse(localStorage.dc_shot || "[]"));
+      async function load() {
+        const { data, error } = await sb
+          .from("tickets")
+          .select("id,ticket_code,name,package,status")
+          .eq("status", "paid")
+          .order("created_at");
+        if (error) return;
+        const all = [...data].sort((a, b) => shot.has(a.id) - shot.has(b.id));
+        q.innerHTML =
+          all
+            .map(
+              (x) =>
+                `<div class="card ${shot.has(x.id) ? "done" : ""}"><div class="c">${esc(x.ticket_code)}</div>${esc(x.name)}<br><small>${L[x.package]}, 3 photos</small><div class="row"><button class="${shot.has(x.id) ? "" : "go"}" data-id="${x.id}">${shot.has(x.id) ? "Undo photographed" : "Photographed"}</button></div></div>`,
+            )
+            .join("") || "<p class=empty>No paid tickets waiting.</p>";
+      }
+      const q = document.getElementById("q");
+      q.onclick = (e) => {
+        const id = e.target.closest("button")?.dataset.id;
+        if (!id) return;
+        shot.has(id) ? shot.delete(id) : shot.add(id);
+        localStorage.dc_shot = JSON.stringify([...shot]);
+        load();
+      };
+      load();
+      setInterval(load, 10000);
+    </script>
+  </body>
+</html>

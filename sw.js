@@ -1,3 +1,35 @@
-const C="dc-v1",A=["./","index.html","form.html","cashier.html","camera.html","editor.html","layout.html","css/layout.css","auditor.html","css/global.css","js/supabase.js","js/auth.js","js/outbox.js","js/vendor/supabase.js","img/dmac-logo-orange-purple-bright.png","fonts/chakra-petch-latin-500-normal.woff2","fonts/chakra-petch-latin-700-normal.woff2","fonts/rajdhani-latin-600-normal.woff2","fonts/rajdhani-latin-700-normal.woff2"];
-addEventListener("install",e=>e.waitUntil(caches.open(C).then(c=>c.addAll(A))));
-addEventListener("fetch",e=>{if(new URL(e.request.url).origin!==location.origin)return;e.respondWith(fetch(e.request).then(r=>{const k=r.clone();caches.open(C).then(c=>c.put(e.request,k));return r}).catch(()=>caches.match(e.request)))});
+const C = "dc-v1",
+  A = [
+    "./",
+    "index.html",
+    "form.html",
+    "cashier.html",
+    "camera.html",
+    "editor.html",
+    "layout.html",
+    "css/layout.css",
+    "auditor.html",
+    "css/global.css",
+    "js/supabase.js",
+    "js/auth.js",
+    "js/outbox.js",
+    "js/vendor/supabase.js",
+    "img/dmac-logo-orange-purple-bright.png",
+    "fonts/chakra-petch-latin-500-normal.woff2",
+    "fonts/chakra-petch-latin-700-normal.woff2",
+    "fonts/rajdhani-latin-600-normal.woff2",
+    "fonts/rajdhani-latin-700-normal.woff2",
+  ];
+addEventListener("install", (e) => e.waitUntil(caches.open(C).then((c) => c.addAll(A))));
+addEventListener("fetch", (e) => {
+  if (new URL(e.request.url).origin !== location.origin) return;
+  e.respondWith(
+    fetch(e.request)
+      .then((r) => {
+        const k = r.clone();
+        caches.open(C).then((c) => c.put(e.request, k));
+        return r;
+      })
+      .catch(() => caches.match(e.request)),
+  );
+});
