@@ -5,31 +5,36 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>DigiClick Booth</title>
     <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/screens.css" />
+    <link rel="stylesheet" href="css/motion.css" />
   </head>
   <body>
-    <header class="bar">
-      <img src="img/dmac-logo-orange-purple-bright.png" alt="DMAC" />
-      <h1>DigiClick Booth</h1>
-    </header>
-    <main>
-      <div class="cols">
-        <a class="card" href="form.html"
-          ><div class="c">Register</div>
-          Booth tablet</a
-        ><a class="card" href="cashier.html"
-          ><div class="c">Cashier</div>
-          Payments, voids, deferrals</a
-        ><a class="card" href="camera.html"
-          ><div class="c">Camera</div>
-          Paid queue</a
-        ><a class="card" href="editor.html"
-          ><div class="c">Editor</div>
-          Editing, print, delivery</a
-        ><a class="card" href="auditor.html"
-          ><div class="c">Auditor</div>
-          Dashboard, tables, PINs</a
-        >
+    <main class="home-wrap">
+      <div class="home">
+        <section class="brand">
+          <div class="logo-wrap">
+            <img class="logo" src="img/dmac-logo-orange-purple-bright.png" alt="DMAC GFMINHS Digital Multimedia Arts Club" />
+          </div>
+          <h1><span class="w1">DigiClick</span> <span class="w2">Booth</span></h1>
+          <p>Choose your station.</p>
+        </section>
+        <nav class="stations" aria-label="Stations">
+          <a class="station primary" href="form.html" style="--i: 0">
+            <span><b>Register</b><small>Booth tablet</small></span>
+            <svg class="arrow" viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 28h40M31 11l17 17-17 17" /></svg>
+          </a>
+          <a class="station" href="cashier.html" style="--i: 1">
+            <span><b>Cashier</b><small>Payments, voids, deferrals</small></span>
+          </a>
+          <a class="station" href="editor.html" style="--i: 2">
+            <span><b>Editor</b><small>Editing, print, delivery</small></span>
+          </a>
+          <a class="station" href="auditor.html" style="--i: 3">
+            <span><b>Auditor</b><small>Dashboard, tables, PINs</small></span>
+          </a>
+        </nav>
       </div>
+      <p class="cam-link">Photographer? <a href="camera.html">Open the Camera queue</a></p>
     </main>
   </body>
 </html>

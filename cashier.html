@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>DigiClick: Cashier</title>
     <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/motion.css" />
   </head>
   <body>
     <main>
       <div class="cols">
         <section class="col">
-          <h2>Awaiting payment</h2>
+          <h2 class="await">Awaiting payment · <span class="n" id="na">0</span></h2>
           <div id="a"></div>
         </section>
         <section class="col">
-          <h2>Paid</h2>
+          <h2 class="paid">Paid · <span class="n" id="np">0</span></h2>
           <div id="p"></div>
         </section>
       </div>
@@ -24,6 +25,7 @@
       import { boot, ask } from "./js/auth.js";
       import { sb } from "./js/supabase.js";
       import { send, onSynced } from "./js/outbox.js";
+      import { reconcile, setCount } from "./js/ui.js";
       const op = await boot("cashier", "Cashier");
       const L = {
         digital: "Digital",
@@ -36,35 +38,43 @@
           /[&<>"]/g,
           (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
         );
+      // grade_section is read when the table allows it. If the query is refused, fall back to the original columns.
+      let withGrade = true;
+      const tickets = () =>
+        sb
+          .from("tickets")
+          .select("id,ticket_code,name,package,status" + (withGrade ? ",grade_section" : ""))
+          .in("status", ["awaiting_payment", "paid"])
+          .order("created_at");
       async function load() {
-        const [t, p, pl] = await Promise.all([
-          sb
-            .from("tickets")
-            .select("id,ticket_code,name,package,status")
-            .in("status", ["awaiting_payment", "paid"])
-            .order("created_at"),
+        let [t, p, pl] = await Promise.all([
+          tickets(),
           sb.from("payments").select("ticket_id,amount_php"),
           sb.from("price_list").select("package,price_php"),
         ]);
+        if (t.error?.code && withGrade) {
+          withGrade = false;
+          t = await tickets();
+        }
         if (t.error) return;
         pl.data?.forEach((r) => (price[r.package] = r.price_php));
         const net = {};
         p.data?.forEach((r) => (net[r.ticket_id] = (net[r.ticket_id] || 0) + r.amount_php));
-        for (const [id, st] of [
-          ["a", "awaiting_payment"],
-          ["p", "paid"],
+        for (const [id, st, count] of [
+          ["a", "awaiting_payment", "na"],
+          ["p", "paid", "np"],
         ]) {
           const rows = t.data.filter((x) => x.status === st);
-          document.getElementById(id).innerHTML =
-            rows
-              .map(
-                (
-                  x,
-                ) => `<div class="card"><div class="c">${esc(x.ticket_code)}</div>${esc(x.name)}<br><small>${L[x.package]}, Php ${st === "paid" ? (net[x.id] ?? 0) : price[x.package]}</small>
-      <div class="row">${st === "awaiting_payment" ? `<button class="go" data-do="pay" data-id="${x.id}" data-pk="${x.package}">Mark paid</button>` : x.package === "physical_day" ? `<button data-do="defer" data-id="${x.id}">Move to next week</button>` : ""}<button class="warn" data-do="void" data-id="${x.id}">Void</button></div></div>`,
-              )
-              .join("") ||
-            `<p class="empty">${st === "paid" ? "No paid tickets yet." : "No one waiting to pay."}</p>`;
+          setCount(document.getElementById(count), rows.length);
+          reconcile(document.getElementById(id), rows, {
+            key: (x) => x.id,
+            cls: () => (st === "paid" ? "dark" : ""),
+            empty: st === "paid" ? "No paid tickets yet." : "No one waiting to pay.",
+            html: (x) => `<h3 class="name">${esc(x.name)}</h3>
+              <p class="meta">${x.grade_section ? esc(x.grade_section) + " · " : ""}${esc(x.ticket_code)}</p>
+              <p class="line">${L[x.package]}, Php ${st === "paid" ? (net[x.id] ?? 0) : price[x.package]}</p>
+              <div class="row">${st === "awaiting_payment" ? `<button class="pri grow" data-do="pay" data-id="${x.id}" data-pk="${x.package}">Mark paid</button>` : x.package === "physical_day" ? `<button class="ghost" data-do="defer" data-id="${x.id}">Move to next week</button>` : ""}<button class="warn" data-do="void" data-id="${x.id}">Void</button></div>`,
+          });
         }
       }
       document.querySelector("main").onclick = async (e) => {

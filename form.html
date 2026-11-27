@@ -5,47 +5,74 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>DigiClick: Register</title>
     <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/screens.css" />
+    <link rel="stylesheet" href="css/motion.css" />
   </head>
   <body>
-    <main id="app">
+    <main id="app" class="reg">
       <form id="f" hidden>
-        <label for="name">Full name</label
-        ><input id="name" type="text" required autocomplete="off" />
-        <label for="gs">Grade and section</label
-        ><input id="gs" type="text" required autocomplete="off" />
-        <label for="plat">Where should we send your photos?</label>
-        <select id="plat">
-          <option value="facebook_messenger">Facebook Messenger</option>
-          <option value="instagram">Instagram</option>
-          <option value="gmail">Gmail</option>
-          <option value="other">Other</option>
-        </select>
-        <input
-          id="other"
-          type="text"
-          placeholder="Which platform?"
-          hidden
-          style="margin-top: 8px"
-        />
-        <label for="user">Your username or email on that platform</label
-        ><input id="user" type="text" required autocomplete="off" />
-        <label>May the club post your photos on its page?</label>
-        <label class="opt"
-          ><input type="radio" name="use" value="true" required />Yes, you may post them</label
-        >
-        <label class="opt"
-          ><input type="radio" name="use" value="false" />No, keep them private</label
-        >
-        <label>Choose a package</label>
-        <div id="pk"></div>
-        <button class="go" style="width: 100%; margin-top: 24px">Get my ticket</button>
+        <div>
+          <label class="fx" for="name">Full name</label
+          ><input class="fx" id="name" type="text" required autocomplete="off" />
+          <label class="fx" for="gs">Grade and section</label
+          ><input class="fx" id="gs" type="text" required autocomplete="off" />
+          <label class="fx" id="plat-l">Where should we send your photos?</label>
+          <div class="opts2 fx" id="plat" role="radiogroup" aria-labelledby="plat-l">
+            <label class="opt ctr"
+              ><input type="radio" name="plat" value="facebook_messenger" checked />Facebook
+              Messenger</label
+            >
+            <label class="opt ctr"><input type="radio" name="plat" value="instagram" />Instagram</label>
+            <label class="opt ctr"><input type="radio" name="plat" value="gmail" />Gmail</label>
+            <label class="opt ctr"><input type="radio" name="plat" value="other" />Other</label>
+          </div>
+          <input
+            id="other"
+            type="text"
+            placeholder="Which platform?"
+            aria-label="Which platform?"
+            hidden
+          />
+          <label class="fx" for="user">Your username or email on that platform</label
+          ><input class="fx" id="user" type="text" required autocomplete="off" />
+        </div>
+        <div>
+          <label class="fx">Choose a package</label>
+          <div id="pk" class="fx"></div>
+          <label class="fx" style="margin-top: 30px">May the club post your photos on its page?</label>
+          <div class="fx">
+            <label class="opt"
+              ><input type="radio" name="use" value="true" required />Yes, you may post them</label
+            >
+            <label class="opt"
+              ><input type="radio" name="use" value="false" />No, keep them private</label
+            >
+          </div>
+          <button class="go shine fx" id="submit" type="submit">Send my request</button>
+        </div>
       </form>
-      <div id="done" class="done" hidden>
-        <p>Your ticket code</p>
-        <div class="code" id="code"></div>
-        <p>Take this code to the cashier to pay.</p>
-      </div>
     </main>
+    <section id="done" class="sent" hidden aria-live="polite">
+      <div class="seal-wrap">
+        <span class="ring"></span><span class="ring r2"></span><span class="ring r3"></span>
+        <svg class="seal" viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="100" fill="#17092f" />
+          <path
+            d="M56 102 L86 131 L144 74"
+            fill="none"
+            stroke="#fff"
+            stroke-width="17"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            pathLength="1"
+          />
+        </svg>
+      </div>
+      <h2 id="sent-t" aria-label="Sent!"></h2>
+      <p>Please go to the cashier to pay.</p>
+      <p>Just tell them your name.</p>
+      <button id="next" type="button"><i class="prog"></i><span class="t">Next person</span></button>
+    </section>
     <script src="js/vendor/supabase.js"></script>
     <script src="js/vendor/bgstack-runtime.js"></script>
     <script type="module">
@@ -53,10 +80,12 @@
       import { sb } from "./js/supabase.js";
       import { send } from "./js/outbox.js";
       import { mountBg } from "./js/bg.js";
+      import { stagger, confetti, reduced } from "./js/ui.js";
       mountBg();
       const op = await boot("kiosk", "Register for DigiClick");
       const $ = (id) => document.getElementById(id),
-        f = $("f");
+        f = $("f"),
+        done = $("done");
       let prefix = localStorage.dc_prefix;
       while (!prefix) {
         prefix = ((await ask("Name this tablet", { label: "Short code, such as K1" })) || "")
@@ -80,11 +109,35 @@
             `<label class="opt"><input type="radio" name="pkg" value="${k}" ${i ? "" : "required"}>${l}<b>Php ${p}</b></label>`,
         )
         .join("");
-      f.hidden = false;
-      $("plat").onchange = () => {
-        $("other").hidden = $("plat").value !== "other";
-        $("other").required = !$("other").hidden;
+      $("sent-t").innerHTML = [..."Sent!"]
+        .map((c, i) => `<span style="--j:${i}" aria-hidden="true">${c}</span>`)
+        .join("");
+      const showForm = () => {
+        stagger(f);
+        f.hidden = false;
       };
+      showForm();
+      const other = $("other");
+      $("plat").onchange = () => {
+        other.hidden = f.elements.plat.value !== "other";
+        other.required = !other.hidden;
+        if (!other.hidden) other.focus();
+      };
+      let timer;
+      const next = () => {
+        clearTimeout(timer);
+        if (done.hidden) return;
+        const finish = () => {
+          done.hidden = true;
+          done.classList.remove("leaving");
+          scrollTo(0, 0);
+          showForm();
+        };
+        if (reduced()) return finish();
+        done.classList.add("leaving");
+        setTimeout(finish, 350);
+      };
+      $("next").onclick = next;
       f.onsubmit = async (e) => {
         e.preventDefault();
         const n = (+localStorage.dc_n || 0) + 1;
@@ -98,25 +151,26 @@
           p_device_created_at: new Date().toISOString(),
           p_name: $("name").value,
           p_grade_section: $("gs").value,
-          p_contact_platform: $("plat").value,
-          p_contact_platform_other: $("plat").value === "other" ? $("other").value : null,
+          p_contact_platform: v("plat"),
+          p_contact_platform_other: v("plat") === "other" ? other.value : null,
           p_contact_username: $("user").value,
           p_allow_page_use: v("use") === "true",
           p_package: v("pkg"),
           p_operator: op,
         };
         send("create_ticket", args);
-        $("code").textContent = code;
+        // The orange Sent screen opens outward from the button that was pressed.
+        const r = $("submit").getBoundingClientRect(),
+          cx = r.left + r.width / 2,
+          cy = r.top + r.height / 2;
+        done.style.setProperty("--cx", cx + "px");
+        done.style.setProperty("--cy", cy + "px");
+        done.hidden = false;
+        confetti(innerWidth / 2, innerHeight * 0.3);
         f.hidden = true;
-        $("done").hidden = false;
         f.reset();
-        $("other").hidden = true;
-        setTimeout(() => {
-          $("done").hidden = true;
-          $("code").textContent = "";
-          f.hidden = false;
-          scrollTo(0, 0);
-        }, 15000);
+        other.hidden = true;
+        timer = setTimeout(next, 15000);
       };
     </script>
   </body>
