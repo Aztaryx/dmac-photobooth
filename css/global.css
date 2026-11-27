@@ -278,3 +278,17 @@ th {
   opacity: 0.5;
   border-left-color: var(--orange);
 }
+#bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+#bg-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 13, 13, 0.55);
+  z-index: -1;
+}

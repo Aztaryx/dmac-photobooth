@@ -47,10 +47,13 @@
       </div>
     </main>
     <script src="js/vendor/supabase.js"></script>
+    <script src="js/vendor/bgstack-runtime.js"></script>
     <script type="module">
       import { boot, ask } from "./js/auth.js";
       import { sb } from "./js/supabase.js";
       import { send } from "./js/outbox.js";
+      import { mountBg } from "./js/bg.js";
+      mountBg();
       const op = await boot("kiosk", "Register for DigiClick");
       const $ = (id) => document.getElementById(id),
         f = $("f");

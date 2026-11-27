@@ -1,0 +1,33 @@
+{
+  "format": "bgstack-package",
+  "version": 1,
+  "scene": "scene.json",
+  "assets": {
+    "images": {
+      "solid": [
+        "assets/images/solid_000.png"
+      ],
+      "sp_v3bg_mainmenu": [
+        "assets/images/sp_v3bg_mainmenu_000.png"
+      ],
+      "sp_v4bg_pattern": [
+        "assets/images/sp_v4bg_pattern_000.png"
+      ],
+      "pt_diamonddust": [
+        "assets/images/pt_diamonddust_000.png",
+        "assets/images/pt_diamonddust_001.png",
+        "assets/images/pt_diamonddust_002.png",
+        "assets/images/pt_diamonddust_003.png"
+      ],
+      "sp_v4bg_rect": [
+        "assets/images/sp_v4bg_rect_000.png"
+      ],
+      "_filter_heathaze_noise_sprite": [
+        "assets/images/_filter_heathaze_noise_sprite_000.png"
+      ]
+    },
+    "audio": null,
+    "font": null,
+    "fontSize": 8
+  }
+}
