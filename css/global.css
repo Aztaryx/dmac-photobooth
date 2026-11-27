@@ -1,0 +1,38 @@
+@font-face{font-family:"Chakra Petch";font-weight:500;src:url(../fonts/chakra-petch-latin-500-normal.woff2)}
+@font-face{font-family:"Chakra Petch";font-weight:700;src:url(../fonts/chakra-petch-latin-700-normal.woff2)}
+@font-face{font-family:"Rajdhani";font-weight:600;src:url(../fonts/rajdhani-latin-600-normal.woff2)}
+@font-face{font-family:"Rajdhani";font-weight:700;src:url(../fonts/rajdhani-latin-700-normal.woff2)}
+:root{--bg:#0d0d0d;--surface:#1a1a1a;--orange:#f97316;--purple:#4c1d95;--purple-bright:#8b5cf6;--text:#f0f0f0;--muted:#888;--bad:#f87171;--font:"Chakra Petch",sans-serif;--font2:"Rajdhani",sans-serif;--nav-h:80px;--ease-out:cubic-bezier(.22,1,.36,1)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:500 18px/1.5 var(--font);min-height:100vh}
+header.bar{height:var(--nav-h);display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:2px solid var(--purple)}
+header.bar img{height:48px}header.bar h1{font:700 26px var(--font2);margin:0;flex:1}
+:where(main){padding:20px;max-width:1200px;margin:auto}
+button,input,select,textarea{font:inherit;color:inherit}
+:where(button){min-height:52px;padding:0 22px;border-radius:8px;border:2px solid var(--purple);background:var(--surface);cursor:pointer}
+button.go{background:var(--orange);border-color:var(--orange);color:#0d0d0d;font-weight:700}
+button.warn{border-color:var(--bad);color:var(--bad)}
+:focus-visible{outline:3px solid var(--purple-bright);outline-offset:2px}
+:where(label){display:block;margin:18px 0 6px;color:var(--purple-bright)}
+:where(input[type=text],input[type=number],input[type=password],select){width:100%;min-height:52px;padding:10px 14px;background:var(--surface);border:2px solid #333;border-radius:8px}
+.opt{display:flex;align-items:center;gap:12px;padding:14px;margin:8px 0;background:var(--surface);border:2px solid #333;border-radius:8px;color:var(--text);cursor:pointer}
+.opt:has(input:checked){border-color:var(--orange)}.opt input{width:24px;height:24px;accent-color:var(--orange)}.opt b{margin-left:auto;font:700 24px var(--font2);color:var(--orange)}
+#sync{margin-left:auto;padding:8px 14px;min-height:0;font-size:15px;border:2px solid #333}
+#sync.wait{border-color:var(--orange)}#sync.off{border-color:var(--bad)}#sync.ok{color:var(--muted)}
+.gate{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:9}
+.gate form{width:min(420px,92vw)}.gate img{height:72px}.gate .pin{font:700 40px var(--font2);letter-spacing:.3em;text-align:center}
+.err{color:var(--bad);min-height:1.5em}
+.code{font:700 clamp(72px,18vw,160px)/1 var(--font2);color:var(--orange);letter-spacing:.04em}
+.done{text-align:center;padding:60px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.col h2{font:700 24px var(--font2);margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--purple)}
+.card{background:var(--surface);border-left:6px solid var(--purple);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.card .c{font:700 30px var(--font2);color:var(--orange)}.card small,.empty{color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+dialog{background:var(--surface);color:var(--text);border:2px solid var(--purple);border-radius:12px;width:min(440px,92vw)}dialog::backdrop{background:#000a}
+@media(prefers-reduced-motion:no-preference){.done{animation:in .5s var(--ease-out)}@keyframes in{from{opacity:0;transform:scale(.96)}}}
+table{border-collapse:collapse;width:100%;font-size:15px}th,td{padding:8px 10px;border-bottom:1px solid #2a2a2a;text-align:left;white-space:nowrap}th{color:var(--purple-bright)}
+.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}.tabs button[aria-selected=true]{border-color:var(--orange);color:var(--orange)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;border:2px solid var(--orange);color:var(--orange);font-size:14px;margin-left:6px}
+.stat{font:700 44px var(--font2);color:var(--orange)}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.card.done{opacity:.5;border-left-color:var(--orange)}

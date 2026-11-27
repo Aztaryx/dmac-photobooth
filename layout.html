@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DigiClick: Print layout</title>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <style>
+    /* Custom scrollbar for dark studio aesthetic */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d0d0d;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333333;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4a4a4a;
+    }
+
+    /* Checkered transparency pattern for canvas backdrop */
+    .studio-grid {
+      background-color: #0d0d0d;
+      background-image: radial-gradient(#262626 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Print Styles for exact A4 Landscape 6-Strip Output */
+    @media print {
+      header.bar, .gate { display: none !important; }
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        width: 297mm !important;
+        height: 210mm !important;
+        overflow: hidden !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      #app-shell {
+        display: none !important;
+      }
+      #print-area {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 297mm !important;
+        height: 210mm !important;
+        background: #ffffff !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 99999 !important;
+      }
+      #print-area img {
+        width: 297mm !important;
+        height: 210mm !important;
+        object-fit: contain !important;
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden select-none">
+
+  <!-- Hidden Print Container populated right before window.print() -->
+  <div id="print-area" class="hidden"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Main Application Shell -->
+  <div id="app-shell" class="flex flex-col w-screen overflow-hidden" style="height:calc(100vh - var(--nav-h))">
+
+    <!-- Top Header Toolbar -->
+    <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-20">
+      <button onclick="location='editor.html'" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">Back to board</button>
+
+      <!-- Center View Switcher -->
+      <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <button id="view-single-btn" onclick="setWorkspaceView('single')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-purple-600 text-white shadow">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2" /></svg>
+          <span>2×6 Strip Editor</span>
+        </button>
+        <button id="view-a4-btn" onclick="setWorkspaceView('a4')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M8 4v16M16 4v16" /></svg>
+          <span>A4 Sheet (6 Prints)</span>
+        </button>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="openPreviewModal('strip')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5" title="Preview Active 2x6 Strip or A4 Sheet">
+          <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+          <span class="hidden sm:inline">Preview</span>
+        </button>
+
+        <button onclick="downloadActiveStripPNG()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5" title="Download Current 2x6 Strip PNG">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <span class="hidden md:inline">Save 2×6 Strip</span>
+        </button>
+
+        <button onclick="printA4Sheet()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white text-xs font-bold shadow-lg shadow-purple-900/40 transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+          <span>Print A4</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main 3-Column Studio Body -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+      <!-- LEFT SIDEBAR: Photos, Templates, Canvas Elements -->
+      <aside class="w-full lg:w-80 bg-slate-900 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col shrink-0 max-h-[38vh] lg:max-h-none">
+        <!-- Sidebar Tabs -->
+        <div class="grid grid-cols-3 border-b border-slate-800 bg-slate-950/60 p-1 gap-1 shrink-0">
+          <button id="tab-photos" onclick="switchLeftTab('photos')" class="py-2 px-2 rounded-lg text-xs font-semibold bg-slate-800 text-white flex items-center justify-center gap-1.5 transition">
+            <span>📸</span> Photos
+          </button>
+          <button id="tab-elements" onclick="switchLeftTab('elements')" class="py-2 px-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition">
+            <span>✨</span> Elements
+          </button>
+          <button id="tab-template" onclick="switchLeftTab('template')" class="py-2 px-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition">
+            <span>🎨</span> Frame
+          </button>
+        </div>
+
+        <!-- TAB 1: PHOTOS -->
+        <div id="panel-photos" class="flex-1 overflow-y-auto p-3.5 space-y-3">
+          <div class="flex gap-2">
+            <label class="flex-1 cursor-pointer bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition shadow">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+              <span>Upload Photos</span>
+              <input type="file" id="photo-upload-input" accept="image/*" multiple class="hidden" onchange="handlePhotoUpload(event)" />
+            </label>
+            <button onclick="generateSamplePhotos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2.5 px-3 rounded-xl border border-slate-700 transition" title="Generate 6 vibrant photobooth sample shots">
+              + Samples
+            </button>
+          </div>
+
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-400 flex items-start gap-2">
+            <span class="text-purple-400 text-sm">💡</span>
+            <span>Drag any photo below onto one of the <strong>3 slots</strong> on the 2×6 strip, or click a photo to auto-fill the next open slot.</span>
+          </div>
+
+          <!-- Uploaded Photos Grid -->
+          <div id="photo-tray" class="grid grid-cols-3 lg:grid-cols-2 gap-2.5">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- TAB 2: ELEMENTS & STICKERS (Canva-style) -->
+        <div id="panel-elements" class="hidden flex-1 overflow-y-auto p-3.5 space-y-4">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Add Text Layer</h3>
+            <div class="flex gap-2">
+              <button onclick="addTextElement('DigiClick! ✨', '#fde68a', 'Caveat')" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl py-2 px-3 text-xs font-semibold text-amber-200 transition">
+                + Script Text
+              </button>
+              <button onclick="addTextElement('2026 EVENT', '#ffffff', 'Space Grotesk')" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl py-2 px-3 text-xs font-semibold text-white transition">
+                + Bold Badge
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Stickers & Props</h3>
+              <span class="text-[10px] text-slate-500">Click or Drag to Strip</span>
+            </div>
+            <div id="sticker-palette" class="grid grid-cols-4 gap-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Decorative Shapes</h3>
+            <div id="shape-palette" class="grid grid-cols-4 gap-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: TEMPLATE & BRANDING -->
+        <div id="panel-template" class="hidden flex-1 overflow-y-auto p-3.5 space-y-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Strip Theme</label>
+            <div class="grid grid-cols-2 gap-2" id="theme-selector">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="space-y-2.5 pt-2 border-t border-slate-800">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Footer Branding</label>
+            <div>
+              <span class="text-[11px] text-slate-400">Main Title (Script)</span>
+              <input type="text" id="brand-title-input" value="DigiClick" oninput="updateStripBranding()" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500" />
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400">Subtitle</span>
+              <input type="text" id="brand-subtitle-input" value="GFMINHS Multimedia Arts Club" oninput="updateStripBranding()" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500" />
+            </div>
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-xs text-slate-300">Show Camera Clapper Icon</span>
+              <input type="checkbox" id="brand-icon-toggle" checked onchange="updateStripBranding()" class="w-4 h-4 accent-purple-600 rounded" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-300">Wireframe & Sparkle Accents</span>
+              <input type="checkbox" id="brand-wireframe-toggle" checked onchange="updateStripBranding()" class="w-4 h-4 accent-purple-600 rounded" />
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-slate-800">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Custom Frame Overlay (PNG)</label>
+            <div class="flex gap-2">
+              <label class="flex-1 cursor-pointer bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium py-2 px-3 rounded-xl text-center transition">
+                Upload Frame PNG
+                <input type="file" accept="image/png,image/webp" class="hidden" onchange="handleOverlayUpload(event)" />
+              </label>
+              <button onclick="clearCustomOverlay()" class="bg-slate-800 hover:bg-red-950/60 border border-slate-700 text-slate-300 hover:text-red-300 text-xs px-3 rounded-xl transition">
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER WORKSPACE: Interactive 2x6 Strip Canvas OR A4 6-Strip Print Sheet -->
+      <main class="flex-1 studio-grid relative overflow-auto flex flex-col items-center justify-center p-4 md:p-6">
+
+        <!-- Top Floating Status Pill -->
+        <div class="mb-3 flex flex-wrap items-center justify-center gap-2 bg-slate-900/90 backdrop-blur border border-slate-800 px-3.5 py-1.5 rounded-full shadow-xl z-10">
+          <span class="text-xs font-semibold text-purple-300" id="active-strip-label">Editing Strip #1 of 6</span>
+          <span class="text-slate-600">•</span>
+          <span class="text-[11px] text-slate-400" id="active-slot-count">0 / 3 Photos Filled</span>
+          <button onclick="clearCurrentStrip()" class="ml-1 text-[11px] text-rose-400 hover:text-rose-300 underline">Reset Strip</button>
+        </div>
+
+        <!-- VIEW A: SINGLE 2x6 STRIP INTERACTIVE EDITOR -->
+        <div id="single-strip-workspace" class="flex-1 flex items-center justify-center w-full min-h-0">
+          <div id="strip-stage-wrapper" class="relative flex items-center justify-center shadow-2xl shadow-black/80 rounded-sm ring-1 ring-white/15 bg-slate-950 transition-all">
+            <!-- High-DPI Visual Canvas (rendered cleanly at 600x1800 logical resolution, scaled to fit screen) -->
+            <canvas id="strip-canvas" width="600" height="1800" class="block cursor-default rounded-sm"></canvas>
+          </div>
+        </div>
+
+        <!-- VIEW B: A4 PRINT SHEET (6 STRIPS OF 2x6) -->
+        <div id="a4-sheet-workspace" class="hidden flex-1 flex flex-col items-center justify-center w-full min-h-0">
+          <div class="relative bg-white p-2 sm:p-3 rounded shadow-2xl shadow-black/90 ring-1 ring-slate-700 flex flex-col items-center">
+            <canvas id="a4-canvas" width="1754" height="1240" class="max-w-full max-h-[64vh] w-auto h-auto block cursor-pointer"></canvas>
+            <div class="w-full flex flex-wrap items-center justify-between gap-2 pt-2.5 px-1 text-slate-800">
+              <div class="flex items-center gap-3 text-xs font-medium">
+                <span><strong>Paper:</strong> A4 Landscape (297mm × 210mm)</span>
+                <span class="hidden sm:inline">•</span>
+                <span class="hidden sm:inline"><strong>Layout:</strong> 6 × (2×6 in) Photo Strips</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <input type="checkbox" id="cut-marks-toggle" checked onchange="renderA4Canvas()" class="accent-purple-600 rounded" />
+                  Crop & Cut Guides
+                </label>
+                <button onclick="downloadA4SheetPNG()" class="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition">
+                  Save A4 PNG
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Quick Hint -->
+        <div class="mt-2 text-[11px] text-slate-500 text-center">
+          Tip: Click any photo slot to pan & zoom • Click stickers/text to drag, resize, rotate, or delete
+        </div>
+      </main>
+
+      <!-- RIGHT SIDEBAR: Inspector (Selected Slot / Element) & A4 6-Strip Manager -->
+      <aside class="w-full lg:w-80 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col shrink-0 max-h-[34vh] lg:max-h-none">
+
+        <!-- A4 6-STRIP SLOT SELECTOR (Always accessible at top of right panel) -->
+        <div class="p-3.5 border-b border-slate-800 bg-slate-950/50 shrink-0">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">A4 Sheet Slots (6 Prints)</h2>
+            <button onclick="duplicateCurrentToAllSix()" class="text-[11px] font-semibold text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 rounded-md transition" title="Copy current strip design & photos to all 6 slots on A4">
+              Copy #1 → All 6
+            </button>
+          </div>
+          <div id="a4-slots-grid" class="grid grid-cols-6 gap-1.5">
+            <!-- 6 clickable strip mini-cards populated by JS -->
+          </div>
+        </div>
+
+        <!-- CONTEXTUAL INSPECTOR (Photo Slot Controls OR Element Controls) -->
+        <div class="flex-1 overflow-y-auto p-3.5 space-y-4">
+
+          <!-- Photo Slot Inspector -->
+          <div id="inspector-photo" class="hidden space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400" id="inspector-photo-title">Photo Slot #1</h3>
+              <button onclick="removePhotoFromSlot(selectedPhotoSlot)" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Remove Photo</button>
+            </div>
+
+            <div class="space-y-2.5 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <span>Zoom</span>
+                  <span id="photo-zoom-val">100%</span>
+                </div>
+                <input type="range" id="photo-zoom-slider" min="1" max="2.5" step="0.02" value="1" oninput="updateSelectedPhotoTransform()" class="w-full accent-purple-500" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <span>Horizontal Pan (X)</span>
+                  <span id="photo-panx-val">0</span>
+                </div>
+                <input type="range" id="photo-panx-slider" min="-250" max="250" step="2" value="0" oninput="updateSelectedPhotoTransform()" class="w-full accent-purple-500" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <span>Vertical Pan (Y)</span>
+                  <span id="photo-pany-val">0</span>
+                </div>
+                <input type="range" id="photo-pany-slider" min="-250" max="250" step="2" value="0" oninput="updateSelectedPhotoTransform()" class="w-full accent-purple-500" />
+              </div>
+
+              <button onclick="resetSelectedPhotoTransform()" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium transition">
+                Center & Reset Framing
+              </button>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Photo Filter</label>
+              <div class="grid grid-cols-3 gap-1.5" id="photo-filter-buttons">
+                <button onclick="setSlotFilter('none')" data-filter="none" class="filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-purple-600 text-white">Normal</button>
+                <button onclick="setSlotFilter('warm')" data-filter="warm" class="filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">Warm</button>
+                <button onclick="setSlotFilter('bw')" data-filter="bw" class="filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">B&W</button>
+                <button onclick="setSlotFilter('vintage')" data-filter="vintage" class="filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">Vintage</button>
+                <button onclick="setSlotFilter('vibrant')" data-filter="vibrant" class="filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">Vibrant</button>
+                <button onclick="setSlotFilter('cool')" data-filter="cool" class="filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">Cool</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Canvas Element / Sticker / Text Inspector -->
+          <div id="inspector-element" class="hidden space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400">Selected Element</h3>
+              <button onclick="deleteSelectedElement()" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Delete</button>
+            </div>
+
+            <div class="space-y-2.5 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+              <div id="element-text-editor" class="hidden space-y-2">
+                <label class="block text-[11px] text-slate-400">Text Content</label>
+                <input type="text" id="element-text-input" oninput="updateSelectedElementProps()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500" />
+                <div class="flex items-center justify-between pt-1">
+                  <span class="text-[11px] text-slate-400">Text Color</span>
+                  <input type="color" id="element-color-input" onchange="updateSelectedElementProps()" class="w-7 h-7 rounded cursor-pointer bg-transparent border-0" />
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <span>Scale / Size</span>
+                  <span id="el-scale-val">100%</span>
+                </div>
+                <input type="range" id="el-scale-slider" min="0.3" max="2.8" step="0.05" value="1" oninput="updateSelectedElementProps()" class="w-full accent-amber-500" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <span>Rotation</span>
+                  <span id="el-rot-val">0°</span>
+                </div>
+                <input type="range" id="el-rot-slider" min="-180" max="180" step="1" value="0" oninput="updateSelectedElementProps()" class="w-full accent-amber-500" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <button onclick="bringElementForward()" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium transition">Bring Front</button>
+                <button onclick="duplicateSelectedElement()" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium transition">Duplicate</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty Selection Overview -->
+          <div id="inspector-empty" class="space-y-3">
+            <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 text-center space-y-2">
+              <div class="w-10 h-10 rounded-full bg-purple-500/15 text-purple-400 flex items-center justify-center mx-auto">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
+              </div>
+              <h4 class="text-xs font-bold text-slate-200">Interactive Strip Canvas</h4>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Drag photos into the 3 frames, click a frame to adjust zoom/pan, or add stickers & text from the left sidebar.
+              </p>
+            </div>
+
+            <!-- Quick Export Box -->
+            <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 space-y-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Export & Print</h4>
+              <button onclick="openPreviewModal('strip')" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white flex items-center justify-between transition">
+                <span>Preview Active 2×6 Strip</span>
+                <span>→</span>
+              </button>
+              <button onclick="openPreviewModal('a4')" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white flex items-center justify-between transition">
+                <span>Preview Full A4 (6 Prints)</span>
+                <span>→</span>
+              </button>
+              <button onclick="downloadActiveStripPNG()" class="w-full py-2 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-xs font-semibold text-emerald-300 flex items-center justify-between transition">
+                <span>Save Strip #<span id="export-strip-num">1</span> as PNG</span>
+                <span>↓</span>
+              </button>
+              <button onclick="downloadA4SheetPNG()" class="w-full py-2 px-3 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-xs font-semibold text-purple-300 flex items-center justify-between transition">
+                <span>Save Full A4 Sheet PNG</span>
+                <span>↓</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- HIGH-RES PREVIEW MODAL -->
+  <div id="preview-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h3 class="text-sm font-bold text-white" id="preview-modal-title">Print Preview</h3>
+          <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button id="modal-toggle-strip" onclick="openPreviewModal('strip')" class="px-2.5 py-1 rounded text-xs font-semibold bg-purple-600 text-white">2×6 Strip</button>
+            <button id="modal-toggle-a4" onclick="openPreviewModal('a4')" class="px-2.5 py-1 rounded text-xs font-semibold text-slate-400 hover:text-white">A4 Sheet (6 Strips)</button>
+          </div>
+        </div>
+        <button onclick="closePreviewModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">✕</button>
+      </div>
+
+      <div class="flex-1 overflow-auto studio-grid p-6 flex items-center justify-center">
+        <img id="preview-modal-img" src="" alt="High Resolution Preview" class="max-h-[68vh] w-auto object-contain rounded shadow-2xl border border-white/10" />
+      </div>
+
+      <div class="px-5 py-3.5 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-3">
+        <span class="text-xs text-slate-400" id="preview-modal-meta">300 DPI Print-Ready Output</span>
+        <div class="flex items-center gap-2">
+          <button onclick="downloadActiveStripPNG()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+            Download 2×6 PNG
+          </button>
+          <button onclick="downloadA4SheetPNG()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 transition">
+            Download A4 PNG
+          </button>
+          <button onclick="closePreviewModal(); printA4Sheet();" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition">
+            Print A4 Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * DigiClick Photobooth Print & A4 Layout Studio
+     * Logical Strip Resolution: 600 x 1800 px (1:3 aspect ratio = exact 2x6 inches at 300 DPI)
+     * Logical A4 Landscape Resolution: 1754 x 1240 px (exact 297mm x 210mm ratio)
+     */
+
+    const STRIP_W = 600;
+    const STRIP_H = 1800;
+
+    // 3 vertically stacked photo slots matching the DigiClick 2x6 layout proportions
+    const PHOTO_SLOTS = [
+      { index: 0, x: 52, y: 42,  w: 496, h: 472 },
+      { index: 1, x: 52, y: 552, w: 496, h: 472 },
+      { index: 2, x: 52, y: 1062, w: 496, h: 472 }
+    ];
+
+    const THEMES = [
+      {
+        id: 'digiclick',
+        name: 'DigiClick Purple',
+        topColor: '#2d1b36',
+        midColor: '#3a1d4a',
+        botColor: '#130c1a',
+        accent: '#e8b48a',
+        textMain: '#f5efe6',
+        textSub: '#e2d6e8'
+      },
+      {
+        id: 'midnight',
+        name: 'Midnight Gold',
+        topColor: '#0d0d0d',
+        midColor: '#1e1b4b',
+        botColor: '#0d0d0d',
+        accent: '#fbbf24',
+        textMain: '#fef3c7',
+        textSub: '#cbd5e1'
+      },
+      {
+        id: 'rose',
+        name: 'Velvet Rose',
+        topColor: '#4c0519',
+        midColor: '#831843',
+        botColor: '#1f0710',
+        accent: '#fbcfe8',
+        textMain: '#fff1f2',
+        textSub: '#fecdd3'
+      },
+      {
+        id: 'classic',
+        name: 'Studio Ivory',
+        topColor: '#fafaf9',
+        midColor: '#f5f5f4',
+        botColor: '#e7e5e4',
+        accent: '#a855f7',
+        textMain: '#1c1917',
+        textSub: '#57534e'
+      }
+    ];
+
+    const STICKERS = [
+      { id: 'sparkle', label: 'Sparkle', content: '✨', type: 'emoji' },
+      { id: 'star', label: 'Star', content: '⭐', type: 'emoji' },
+      { id: 'party', label: 'Party Hat', content: '🥳', type: 'emoji' },
+      { id: 'glasses', label: 'Cool Shades', content: '😎', type: 'emoji' },
+      { id: 'heart', label: 'Heart', content: '💖', type: 'emoji' },
+      { id: 'camera', label: 'Camera', content: '📸', type: 'emoji' },
+      { id: 'film', label: 'Clapper', content: '🎬', type: 'emoji' },
+      { id: 'crown', label: 'Crown', content: '👑', type: 'emoji' },
+      { id: 'fire', label: 'Fire', content: '🔥', type: 'emoji' },
+      { id: 'butterfly', label: 'Butterfly', content: '🦋', type: 'emoji' },
+      { id: 'rainbow', label: 'Rainbow', content: '🌈', type: 'emoji' },
+      { id: 'peace', label: 'Peace', content: '✌️', type: 'emoji' }
+    ];
+
+    const SHAPES = [
+      { id: 'sparkle4', label: '4-Point Star', shape: 'sparkle4', color: '#fef08a' },
+      { id: 'heartShape', label: 'Vector Heart', shape: 'heart', color: '#f43f5e' },
+      { id: 'badgePill', label: 'Event Pill', shape: 'pill', color: '#9333ea' },
+      { id: 'starBurst', label: 'Burst', shape: 'burst', color: '#f59e0b' }
+    ];
+
+    // Application State
+    let uploadedPhotos = []; // { id, img, src, name }
+    let strips = []; // Array of 6 strip objects
+    let activeStripIndex = 0;
+    let workspaceView = 'single'; // 'single' | 'a4'
+    let selectedPhotoSlot = null; // 0, 1, 2 or null
+    let selectedElementId = null;
+    let customOverlayImg = null;
+
+    // Canvas interaction state
+    let isDragging = false;
+    let dragMode = null; // 'element' | 'photo-pan'
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let initialObjX = 0;
+    let initialObjY = 0;
+
+    function createDefaultStrip(index) {
+      return {
+        id: index,
+        themeId: 'digiclick',
+        brandTitle: 'DigiClick',
+        brandSubtitle: 'GFMINHS Multimedia Arts Club',
+        showIcon: true,
+        showWireframe: true,
+        slots: [
+          { photoId: null, zoom: 1, panX: 0, panY: 0, filter: 'none' },
+          { photoId: null, zoom: 1, panX: 0, panY: 0, filter: 'none' },
+          { photoId: null, zoom: 1, panX: 0, panY: 0, filter: 'none' }
+        ],
+        elements: [] // { id, kind: 'emoji'|'text'|'shape', content, shape, x, y, scale, rotation, color, font }
+      };
+    }
+
+    // Initialize 6 independent strip templates for the A4 sheet
+    for (let i = 0; i < 6; i++) {
+      strips.push(createDefaultStrip(i));
+    }
+
+    const stripCanvas = document.getElementById('strip-canvas');
+    const stripCtx = stripCanvas.getContext('2d');
+    const a4Canvas = document.getElementById('a4-canvas');
+    const a4Ctx = a4Canvas.getContext('2d');
+
+    // Toast notification helper
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = type === 'success'
+        ? 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200'
+        : type === 'warn'
+        ? 'bg-amber-950/95 border-amber-500/50 text-amber-200'
+        : 'bg-slate-900/95 border-purple-500/50 text-slate-100';
+      toast.className = `px-4 py-2.5 rounded-xl border text-xs font-medium shadow-xl backdrop-blur transition-all duration-300 ${colors}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 2600);
+    }
+
+    // Responsive sizing for the central 2x6 canvas
+    function resizeCanvasDisplay() {
+      const container = document.getElementById('single-strip-workspace');
+      if (!container || workspaceView !== 'single') return;
+      const availH = Math.max(320, container.clientHeight - 12);
+      const availW = Math.max(140, container.clientWidth - 24);
+      const aspect = STRIP_W / STRIP_H; // 1:3
+      let displayH = availH;
+      let displayW = displayH * aspect;
+      if (displayW > availW) {
+        displayW = availW;
+        displayH = displayW / aspect;
+      }
+      stripCanvas.style.width = `${Math.floor(displayW)}px`;
+      stripCanvas.style.height = `${Math.floor(displayH)}px`;
+    }
+
+    window.addEventListener('resize', resizeCanvasDisplay);
+
+    // Build Left Sidebar UI
+    function initSidebarUI() {
+      // Stickers
+      const stickerGrid = document.getElementById('sticker-palette');
+      stickerGrid.innerHTML = STICKERS.map(s => `
+        <button
+          draggable="true"
+          ondragstart="handleElementDragStart(event, 'emoji', '${s.content}')"
+          onclick="addStickerElement('${s.content}')"
+          class="aspect-square bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/50 rounded-xl flex flex-col items-center justify-center gap-0.5 transition cursor-grab active:cursor-grabbing"
+          title="Add ${s.label}">
+          <span class="text-xl">${s.content}</span>
+          <span class="text-[9px] text-slate-400 truncate max-w-[90%]">${s.label}</span>
+        </button>
+      `).join('');
+
+      // Shapes
+      const shapeGrid = document.getElementById('shape-palette');
+      shapeGrid.innerHTML = SHAPES.map(sh => `
+        <button
+          onclick="addShapeElement('${sh.shape}', '${sh.color}')"
+          class="aspect-square bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition"
+          title="Add ${sh.label}">
+          <span class="w-5 h-5 rounded-full inline-block" style="background:${sh.color}"></span>
+          <span class="text-[9px] text-slate-400 truncate max-w-[90%]">${sh.label}</span>
+        </button>
+      `).join('');
+
+      // Themes
+      const themeSelector = document.getElementById('theme-selector');
+      themeSelector.innerHTML = THEMES.map(t => `
+        <button onclick="setStripTheme('${t.id}')" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 flex items-center gap-2 text-left transition">
+          <span class="w-5 h-5 rounded-full shrink-0 border border-white/20" style="background: linear-gradient(180deg, ${t.topColor}, ${t.midColor}, ${t.botColor})"></span>
+          <span class="text-xs font-medium text-slate-200 truncate">${t.name}</span>
+        </button>
+      `).join('');
+    }
+
+    function switchLeftTab(tab) {
+      ['photos', 'elements', 'template'].forEach(t => {
+        document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          btn.className = 'py-2 px-2 rounded-lg text-xs font-semibold bg-slate-800 text-white flex items-center justify-center gap-1.5 transition';
+        } else {
+          btn.className = 'py-2 px-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition';
+        }
+      });
+    }
+
+    function setWorkspaceView(view) {
+      workspaceView = view;
+      const singleWs = document.getElementById('single-strip-workspace');
+      const a4Ws = document.getElementById('a4-sheet-workspace');
+      const singleBtn = document.getElementById('view-single-btn');
+      const a4Btn = document.getElementById('view-a4-btn');
+
+      if (view === 'single') {
+        singleWs.classList.remove('hidden');
+        a4Ws.classList.add('hidden');
+        singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-purple-600 text-white shadow';
+        a4Btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
+        resizeCanvasDisplay();
+        renderActiveStrip();
+      } else {
+        singleWs.classList.add('hidden');
+        a4Ws.classList.remove('hidden');
+        a4Btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-purple-600 text-white shadow';
+        singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
+        renderA4Canvas();
+      }
+    }
+
+    // Photo Upload & Sample Photo Generator
+    function handlePhotoUpload(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      let loadedCount = 0;
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            uploadedPhotos.unshift({
+              id: 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+              img,
+              src: e.target.result,
+              name: file.name
+            });
+            loadedCount++;
+            if (loadedCount === files.length) {
+              renderPhotoTray();
+              showToast(`Added ${loadedCount} photo(s) to tray`, 'success');
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+      event.target.value = '';
+    }
+
+    function generateSamplePhotos() {
+      const sampleConfigs = [
+        { bg1: '#f43f5e', bg2: '#fb923c', emoji: '✌️😎', label: 'SHOT 01' },
+        { bg1: '#8b5cf6', bg2: '#ec4899', emoji: '🥳🎉', label: 'SHOT 02' },
+        { bg1: '#06b6d4', bg2: '#3b82f6', emoji: '🤩✨', label: 'SHOT 03' },
+        { bg1: '#10b981', bg2: '#eab308', emoji: '🫶😄', label: 'SHOT 04' },
+        { bg1: '#6366f1', bg2: '#a855f7', emoji: '📸🔥', label: 'SHOT 05' },
+        { bg1: '#ec4899', bg2: '#f43f5e', emoji: '💖👑', label: 'SHOT 06' }
+      ];
+
+      sampleConfigs.forEach((cfg, idx) => {
+        const off = document.createElement('canvas');
+        off.width = 600;
+        off.height = 600;
+        const c = off.getContext('2d');
+
+        const grad = c.createLinearGradient(0, 0, 600, 600);
+        grad.addColorStop(0, cfg.bg1);
+        grad.addColorStop(1, cfg.bg2);
+        c.fillStyle = grad;
+        c.fillRect(0, 0, 600, 600);
+
+        // Decorative bokeh circles
+        c.fillStyle = 'rgba(255,255,255,0.14)';
+        c.beginPath(); c.arc(120, 140, 90, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(490, 460, 120, 0, Math.PI * 2); c.fill();
+
+        // Center Pose Emoji
+        c.font = '150px sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(cfg.emoji, 300, 285);
+
+        // Label badge
+        c.fillStyle = 'rgba(0,0,0,0.35)';
+        c.roundRect(190, 460, 220, 52, 26);
+        c.fill();
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 24px Inter, sans-serif';
+        c.fillText(`DIGICLICK • ${cfg.label}`, 300, 487);
+
+        const dataUrl = off.toDataURL('image/png');
+        const img = new Image();
+        img.onload = () => {
+          uploadedPhotos.push({
+            id: 'sample_' + idx + '_' + Date.now(),
+            img,
+            src: dataUrl,
+            name: `Sample ${idx + 1}`
+          });
+          if (idx === sampleConfigs.length - 1) {
+            renderPhotoTray();
+            showToast('Generated 6 sample photobooth shots!', 'success');
+          }
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    function renderPhotoTray() {
+      const tray = document.getElementById('photo-tray');
+      if (!uploadedPhotos.length) {
+        tray.innerHTML = `
+          <div class="col-span-full py-8 px-3 border border-dashed border-slate-800 rounded-xl text-center space-y-2">
+            <p class="text-xs text-slate-400">No photos uploaded yet.</p>
+            <button onclick="generateSamplePhotos()" class="text-xs font-semibold text-purple-400 hover:text-purple-300 underline">Load 6 sample photos</button>
+          </div>
+        `;
+        return;
+      }
+
+      tray.innerHTML = uploadedPhotos.map(p => `
+        <div
+          draggable="true"
+          ondragstart="handlePhotoDragStart(event, '${p.id}')"
+          onclick="assignPhotoToNextSlot('${p.id}')"
+          class="group relative aspect-square rounded-xl overflow-hidden bg-slate-950 border border-slate-800 hover:border-purple-500 cursor-grab active:cursor-grabbing transition shadow">
+          <img src="${p.src}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition flex items-center justify-between">
+            <span class="text-[10px] font-semibold text-white">Click / Drag</span>
+            <span class="text-[10px] bg-purple-600 text-white px-1.5 py-0.2 rounded">+ Slot</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Drag & Drop from Sidebar to Strip Canvas
+    function handlePhotoDragStart(e, photoId) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'photo', photoId }));
+    }
+
+    function handleElementDragStart(e, kind, content) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ kind, content }));
+    }
+
+    stripCanvas.addEventListener('dragover', e => {
+      e.preventDefault();
+    });
+
+    stripCanvas.addEventListener('drop', e => {
+      e.preventDefault();
+      const raw = e.dataTransfer.getData('text/plain');
+      if (!raw) return;
+      let payload;
+      try { payload = JSON.parse(raw); } catch { return; }
+
+      const pt = getCanvasCoords(e);
+
+      if (payload.kind === 'photo') {
+        // Check which of the 3 slots was dropped on
+        const hitSlot = PHOTO_SLOTS.find(s => pt.x >= s.x && pt.x <= s.x + s.w && pt.y >= s.y && pt.y <= s.y + s.h);
+        if (hitSlot) {
+          assignPhotoToSlot(hitSlot.index, payload.photoId);
+        } else {
+          assignPhotoToNextSlot(payload.photoId);
+        }
+      } else if (payload.kind === 'emoji') {
+        addStickerElement(payload.content, pt.x, pt.y);
+      }
+    });
+
+    function assignPhotoToSlot(slotIdx, photoId) {
+      const strip = strips[activeStripIndex];
+      strip.slots[slotIdx] = {
+        photoId,
+        zoom: 1,
+        panX: 0,
+        panY: 0,
+        filter: 'none'
+      };
+      selectedPhotoSlot = slotIdx;
+      selectedElementId = null;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function assignPhotoToNextSlot(photoId) {
+      const strip = strips[activeStripIndex];
+      // Find first empty slot, or overwrite selected slot, or cycle
+      let targetIdx = strip.slots.findIndex(s => !s.photoId);
+      if (targetIdx === -1) {
+        if (selectedPhotoSlot !== null) {
+          targetIdx = selectedPhotoSlot;
+        } else {
+          showToast('Max 3 photos per strip! Click a slot to replace it.', 'warn');
+          targetIdx = 0;
+        }
+      }
+      assignPhotoToSlot(targetIdx, photoId);
+    }
+
+    function removePhotoFromSlot(slotIdx) {
+      if (slotIdx === null) return;
+      strips[activeStripIndex].slots[slotIdx] = { photoId: null, zoom: 1, panX: 0, panY: 0, filter: 'none' };
+      selectedPhotoSlot = null;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    // Add Interactive Elements (Stickers, Text, Shapes)
+    function addStickerElement(emoji, x = STRIP_W / 2, y = STRIP_H / 2) {
+      const el = {
+        id: 'el_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        kind: 'emoji',
+        content: emoji,
+        x,
+        y,
+        scale: 1,
+        rotation: 0,
+        color: '#ffffff'
+      };
+      strips[activeStripIndex].elements.push(el);
+      selectedElementId = el.id;
+      selectedPhotoSlot = null;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function addTextElement(text, color = '#fde68a', font = 'Caveat') {
+      const el = {
+        id: 'el_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        kind: 'text',
+        content: text,
+        font,
+        x: STRIP_W / 2,
+        y: 532,
+        scale: 1,
+        rotation: -3,
+        color
+      };
+      strips[activeStripIndex].elements.push(el);
+      selectedElementId = el.id;
+      selectedPhotoSlot = null;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function addShapeElement(shape, color) {
+      const el = {
+        id: 'el_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        kind: 'shape',
+        shape,
+        x: STRIP_W / 2,
+        y: STRIP_H / 2,
+        scale: 1,
+        rotation: 0,
+        color
+      };
+      strips[activeStripIndex].elements.push(el);
+      selectedElementId = el.id;
+      selectedPhotoSlot = null;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    // Template & Branding Updates
+    function setStripTheme(themeId) {
+      strips[activeStripIndex].themeId = themeId;
+      renderAll();
+    }
+
+    function updateStripBranding() {
+      const strip = strips[activeStripIndex];
+      strip.brandTitle = document.getElementById('brand-title-input').value;
+      strip.brandSubtitle = document.getElementById('brand-subtitle-input').value;
+      strip.showIcon = document.getElementById('brand-icon-toggle').checked;
+      strip.showWireframe = document.getElementById('brand-wireframe-toggle').checked;
+      renderAll();
+    }
+
+    function handleOverlayUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          customOverlayImg = img;
+          renderAll();
+          showToast('Custom PNG frame overlay applied!', 'success');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearCustomOverlay() {
+      customOverlayImg = null;
+      renderAll();
+      showToast('Custom overlay removed');
+    }
+
+    // Canvas Coordinate Helper
+    function getCanvasCoords(evt) {
+      const rect = stripCanvas.getBoundingClientRect();
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      return {
+        x: ((clientX - rect.left) / rect.width) * STRIP_W,
+        y: ((clientY - rect.top) / rect.height) * STRIP_H
+      };
+    }
+
+    // Hit-test Elements (reverse order for top-most layer)
+    function hitTestElement(x, y) {
+      const elements = strips[activeStripIndex].elements;
+      for (let i = elements.length - 1; i >= 0; i--) {
+        const el = elements[i];
+        const radius = (el.kind === 'text' ? 120 : 65) * el.scale;
+        if (Math.hypot(x - el.x, y - el.y) <= radius) {
+          return el;
+        }
+      }
+      return null;
+    }
+
+    // Pointer Events for Interactive Strip Canvas
+    function onCanvasPointerDown(evt) {
+      const pt = getCanvasCoords(evt);
+
+      // 1. Check elements first
+      const hitEl = hitTestElement(pt.x, pt.y);
+      if (hitEl) {
+        selectedElementId = hitEl.id;
+        selectedPhotoSlot = null;
+        isDragging = true;
+        dragMode = 'element';
+        dragStartX = pt.x;
+        dragStartY = pt.y;
+        initialObjX = hitEl.x;
+        initialObjY = hitEl.y;
+        syncInspectorUI();
+        renderActiveStrip();
+        return;
+      }
+
+      // 2. Check photo slots
+      const hitSlot = PHOTO_SLOTS.find(s => pt.x >= s.x && pt.x <= s.x + s.w && pt.y >= s.y && pt.y <= s.y + s.h);
+      if (hitSlot) {
+        selectedPhotoSlot = hitSlot.index;
+        selectedElementId = null;
+        const slotData = strips[activeStripIndex].slots[hitSlot.index];
+        if (slotData && slotData.photoId) {
+          isDragging = true;
+          dragMode = 'photo-pan';
+          dragStartX = pt.x;
+          dragStartY = pt.y;
+          initialObjX = slotData.panX;
+          initialObjY = slotData.panY;
+        }
+        syncInspectorUI();
+        renderActiveStrip();
+        return;
+      }
+
+      // 3. Clicked empty background
+      selectedElementId = null;
+      selectedPhotoSlot = null;
+      syncInspectorUI();
+      renderActiveStrip();
+    }
+
+    function onCanvasPointerMove(evt) {
+      if (!isDragging) return;
+      evt.preventDefault();
+      const pt = getCanvasCoords(evt);
+      const dx = pt.x - dragStartX;
+      const dy = pt.y - dragStartY;
+
+      if (dragMode === 'element' && selectedElementId) {
+        const el = strips[activeStripIndex].elements.find(e => e.id === selectedElementId);
+        if (el) {
+          el.x = Math.max(20, Math.min(STRIP_W - 20, initialObjX + dx));
+          el.y = Math.max(20, Math.min(STRIP_H - 20, initialObjY + dy));
+          renderActiveStrip();
+        }
+      } else if (dragMode === 'photo-pan' && selectedPhotoSlot !== null) {
+        const slotData = strips[activeStripIndex].slots[selectedPhotoSlot];
+        if (slotData) {
+          slotData.panX = Math.max(-250, Math.min(250, Math.round(initialObjX + dx)));
+          slotData.panY = Math.max(-250, Math.min(250, Math.round(initialObjY + dy)));
+          syncInspectorUI();
+          renderActiveStrip();
+        }
+      }
+    }
+
+    function onCanvasPointerUp() {
+      if (isDragging) {
+        isDragging = false;
+        dragMode = null;
+        renderA4SlotsBar();
+      }
+    }
+
+    stripCanvas.addEventListener('mousedown', onCanvasPointerDown);
+    window.addEventListener('mousemove', onCanvasPointerMove);
+    window.addEventListener('mouseup', onCanvasPointerUp);
+    stripCanvas.addEventListener('touchstart', onCanvasPointerDown, { passive: false });
+    window.addEventListener('touchmove', onCanvasPointerMove, { passive: false });
+    window.addEventListener('touchend', onCanvasPointerUp);
+
+    // Inspector UI Synchronization
+    function syncInspectorUI() {
+      const strip = strips[activeStripIndex];
+      const photoPanel = document.getElementById('inspector-photo');
+      const elPanel = document.getElementById('inspector-element');
+      const emptyPanel = document.getElementById('inspector-empty');
+
+      photoPanel.classList.add('hidden');
+      elPanel.classList.add('hidden');
+      emptyPanel.classList.add('hidden');
+
+      if (selectedElementId) {
+        const el = strip.elements.find(e => e.id === selectedElementId);
+        if (el) {
+          elPanel.classList.remove('hidden');
+          document.getElementById('el-scale-slider').value = el.scale;
+          document.getElementById('el-scale-val').textContent = Math.round(el.scale * 100) + '%';
+          document.getElementById('el-rot-slider').value = el.rotation;
+          document.getElementById('el-rot-val').textContent = el.rotation + '°';
+
+          const textEd = document.getElementById('element-text-editor');
+          if (el.kind === 'text') {
+            textEd.classList.remove('hidden');
+            document.getElementById('element-text-input').value = el.content;
+            document.getElementById('element-color-input').value = el.color;
+          } else {
+            textEd.classList.add('hidden');
+          }
+          return;
+        }
+      }
+
+      if (selectedPhotoSlot !== null && strip.slots[selectedPhotoSlot]?.photoId) {
+        const slot = strip.slots[selectedPhotoSlot];
+        photoPanel.classList.remove('hidden');
+        document.getElementById('inspector-photo-title').textContent = `Photo Slot #${selectedPhotoSlot + 1}`;
+        document.getElementById('photo-zoom-slider').value = slot.zoom;
+        document.getElementById('photo-zoom-val').textContent = Math.round(slot.zoom * 100) + '%';
+        document.getElementById('photo-panx-slider').value = slot.panX;
+        document.getElementById('photo-panx-val').textContent = slot.panX;
+        document.getElementById('photo-pany-slider').value = slot.panY;
+        document.getElementById('photo-pany-val').textContent = slot.panY;
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          const active = btn.dataset.filter === slot.filter;
+          btn.className = active
+            ? 'filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-purple-600 text-white'
+            : 'filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700';
+        });
+        return;
+      }
+
+      emptyPanel.classList.remove('hidden');
+    }
+
+    function updateSelectedPhotoTransform() {
+      if (selectedPhotoSlot === null) return;
+      const slot = strips[activeStripIndex].slots[selectedPhotoSlot];
+      slot.zoom = parseFloat(document.getElementById('photo-zoom-slider').value);
+      slot.panX = parseInt(document.getElementById('photo-panx-slider').value, 10);
+      slot.panY = parseInt(document.getElementById('photo-pany-slider').value, 10);
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function resetSelectedPhotoTransform() {
+      if (selectedPhotoSlot === null) return;
+      const slot = strips[activeStripIndex].slots[selectedPhotoSlot];
+      slot.zoom = 1;
+      slot.panX = 0;
+      slot.panY = 0;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function setSlotFilter(filter) {
+      if (selectedPhotoSlot === null) return;
+      strips[activeStripIndex].slots[selectedPhotoSlot].filter = filter;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function updateSelectedElementProps() {
+      if (!selectedElementId) return;
+      const el = strips[activeStripIndex].elements.find(e => e.id === selectedElementId);
+      if (!el) return;
+      el.scale = parseFloat(document.getElementById('el-scale-slider').value);
+      el.rotation = parseInt(document.getElementById('el-rot-slider').value, 10);
+      if (el.kind === 'text') {
+        el.content = document.getElementById('element-text-input').value;
+        el.color = document.getElementById('element-color-input').value;
+      }
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function deleteSelectedElement() {
+      if (!selectedElementId) return;
+      const strip = strips[activeStripIndex];
+      strip.elements = strip.elements.filter(e => e.id !== selectedElementId);
+      selectedElementId = null;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function bringElementForward() {
+      if (!selectedElementId) return;
+      const strip = strips[activeStripIndex];
+      const idx = strip.elements.findIndex(e => e.id === selectedElementId);
+      if (idx > -1 && idx < strip.elements.length - 1) {
+        const [item] = strip.elements.splice(idx, 1);
+        strip.elements.push(item);
+        renderAll();
+      }
+    }
+
+    function duplicateSelectedElement() {
+      if (!selectedElementId) return;
+      const strip = strips[activeStripIndex];
+      const orig = strip.elements.find(e => e.id === selectedElementId);
+      if (!orig) return;
+      const copy = {
+        ...orig,
+        id: 'el_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        x: Math.min(STRIP_W - 40, orig.x + 35),
+        y: Math.min(STRIP_H - 40, orig.y + 35)
+      };
+      strip.elements.push(copy);
+      selectedElementId = copy.id;
+      syncInspectorUI();
+      renderAll();
+    }
+
+    // Core Strip Renderer (Used for Interactive Editor, Thumbnails, High-Res Export & A4 Print Sheet)
+    function drawStripToContext(ctx, stripData, showSelectionHandles = false) {
+      const theme = THEMES.find(t => t.id === stripData.themeId) || THEMES[0];
+
+      ctx.save();
+
+      // 1. Background Gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, STRIP_W * 0.3, STRIP_H);
+      bgGrad.addColorStop(0, theme.topColor);
+      bgGrad.addColorStop(0.52, theme.midColor);
+      bgGrad.addColorStop(1, theme.botColor);
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, STRIP_W, STRIP_H);
+
+      // 2. Geometric Spiral / Wireframe Line Accents (inspired by DigiClick strip)
+      if (stripData.showWireframe) {
+        ctx.save();
+        ctx.strokeStyle = theme.accent;
+        ctx.globalAlpha = 0.28;
+        ctx.lineWidth = 1.6;
+
+        // Top-left geometric web
+        for (let i = 0; i < 14; i++) {
+          ctx.beginPath();
+          ctx.ellipse(90 + i * 8, 40 + i * 6, 220 - i * 6, 110 + i * 5, -0.35 + i * 0.04, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Right-side sweeping arc lines
+        for (let i = 0; i < 16; i++) {
+          ctx.beginPath();
+          ctx.arc(680, 560, 180 + i * 24, Math.PI * 0.65, Math.PI * 1.45);
+          ctx.stroke();
+        }
+
+        // Lower-left wave mesh
+        ctx.globalAlpha = 0.16;
+        for (let i = 0; i < 12; i++) {
+          ctx.beginPath();
+          ctx.moveTo(0, 1020 + i * 16);
+          ctx.bezierCurveTo(220, 990 + i * 12, 380, 1110 - i * 8, STRIP_W, 1060 + i * 14);
+          ctx.stroke();
+        }
+
+        // Signature 4-point sparkles on margins (matching DigiClick design)
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = '#ffffff';
+        drawFourPointSparkle(ctx, 572, 544, 24);
+        drawFourPointSparkle(ctx, 28, 1046, 26);
+        ctx.restore();
+      }
+
+      // 3. Draw the 3 Photo Slots
+      PHOTO_SLOTS.forEach((slotRect, idx) => {
+        const slotState = stripData.slots[idx];
+        const photoAsset = slotState?.photoId ? uploadedPhotos.find(p => p.id === slotState.photoId) : null;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(slotRect.x, slotRect.y, slotRect.w, slotRect.h);
+        ctx.clip();
+
+        if (photoAsset && photoAsset.img) {
+          // Apply photo filter
+          ctx.filter = getCanvasFilterString(slotState.filter);
+
+          // Cover-fit image inside slot + zoom & pan
+          const img = photoAsset.img;
+          const imgRatio = img.width / img.height;
+          const slotRatio = slotRect.w / slotRect.h;
+          let drawW, drawH;
+          if (imgRatio > slotRatio) {
+            drawH = slotRect.h * slotState.zoom;
+            drawW = drawH * imgRatio;
+          } else {
+            drawW = slotRect.w * slotState.zoom;
+            drawH = drawW / imgRatio;
+          }
+          const drawX = slotRect.x + (slotRect.w - drawW) / 2 + slotState.panX;
+          const drawY = slotRect.y + (slotRect.h - drawH) / 2 + slotState.panY;
+
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          ctx.filter = 'none';
+        } else {
+          // Clean scenic placeholder (matching the DigiClick template aesthetic)
+          const skyGrad = ctx.createLinearGradient(0, slotRect.y, 0, slotRect.y + slotRect.h);
+          skyGrad.addColorStop(0, '#bce3fa');
+          skyGrad.addColorStop(1, '#eaf6fd');
+          ctx.fillStyle = skyGrad;
+          ctx.fillRect(slotRect.x, slotRect.y, slotRect.w, slotRect.h);
+
+          // Fluffy white cloud
+          ctx.fillStyle = '#ffffff';
+          const cx = slotRect.x + slotRect.w * 0.48;
+          const cy = slotRect.y + slotRect.h * 0.24;
+          ctx.beginPath();
+          ctx.arc(cx - 48, cy + 8, 34, 0, Math.PI * 2);
+          ctx.arc(cx, cy - 10, 48, 0, Math.PI * 2);
+          ctx.arc(cx + 52, cy + 10, 32, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Rolling hills
+          ctx.fillStyle = '#b9dc78';
+          ctx.beginPath();
+          ctx.moveTo(slotRect.x, slotRect.y + slotRect.h * 0.72);
+          ctx.quadraticCurveTo(slotRect.x + slotRect.w * 0.45, slotRect.y + slotRect.h * 0.68, slotRect.x + slotRect.w, slotRect.y + slotRect.h * 0.82);
+          ctx.lineTo(slotRect.x + slotRect.w, slotRect.y + slotRect.h);
+          ctx.lineTo(slotRect.x, slotRect.y + slotRect.h);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#7da90e';
+          ctx.beginPath();
+          ctx.moveTo(slotRect.x, slotRect.y + slotRect.h * 0.83);
+          ctx.quadraticCurveTo(slotRect.x + slotRect.w * 0.55, slotRect.y + slotRect.h * 0.72, slotRect.x + slotRect.w, slotRect.y + slotRect.h * 0.80);
+          ctx.lineTo(slotRect.x + slotRect.w, slotRect.y + slotRect.h);
+          ctx.lineTo(slotRect.x, slotRect.y + slotRect.h);
+          ctx.closePath();
+          ctx.fill();
+
+          // Subtle drop-hint label in editor mode
+          if (showSelectionHandles) {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+            ctx.roundRect(slotRect.x + 138, slotRect.y + slotRect.h / 2 - 22, 220, 44, 22);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '600 20px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`Drop Photo #${idx + 1}`, slotRect.x + slotRect.w / 2, slotRect.y + slotRect.h / 2);
+          }
+        }
+        ctx.restore();
+
+        // Highlight active photo slot in editor
+        if (showSelectionHandles && selectedPhotoSlot === idx) {
+          ctx.save();
+          ctx.strokeStyle = '#a855f7';
+          ctx.lineWidth = 6;
+          ctx.strokeRect(slotRect.x - 3, slotRect.y - 3, slotRect.w + 6, slotRect.h + 6);
+          ctx.restore();
+        }
+      });
+
+      // 4. Optional Custom Overlay PNG
+      if (customOverlayImg) {
+        ctx.drawImage(customOverlayImg, 0, 0, STRIP_W, STRIP_H);
+      }
+
+      // 5. Footer Branding ("DigiClick" + "GFMINHS Multimedia Arts Club" + Camera/Clapperboard Icon)
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (stripData.brandTitle) {
+        ctx.fillStyle = theme.textMain;
+        ctx.font = '700 84px Caveat, cursive';
+        ctx.fillText(stripData.brandTitle, STRIP_W / 2 - 8, 1632);
+      }
+
+      const subText = stripData.brandSubtitle || '';
+      ctx.font = '600 23px "Playfair Display", Georgia, serif';
+      ctx.fillStyle = theme.textSub;
+      const textWidth = ctx.measureText(subText).width;
+      const iconOffset = stripData.showIcon ? 26 : 0;
+      ctx.fillText(subText, STRIP_W / 2 - iconOffset, 1706);
+
+      if (stripData.showIcon) {
+        const ix = STRIP_W / 2 + textWidth / 2 - 12;
+        const iy = 1692;
+        drawCameraClapperIcon(ctx, ix, iy, theme.textMain);
+      }
+      ctx.restore();
+
+      // 6. Interactive Canvas Elements (Stickers, Shapes, Text)
+      stripData.elements.forEach(el => {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate((el.rotation * Math.PI) / 180);
+        ctx.scale(el.scale, el.scale);
+
+        if (el.kind === 'emoji') {
+          ctx.font = '92px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(el.content, 0, 0);
+        } else if (el.kind === 'text') {
+          const fontFamily = el.font === 'Caveat' ? '700 62px Caveat, cursive' : '700 42px "Space Grotesk", sans-serif';
+          ctx.font = fontFamily;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = 'rgba(0,0,0,0.65)';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = el.color || '#ffffff';
+          ctx.fillText(el.content, 0, 0);
+        } else if (el.kind === 'shape') {
+          ctx.fillStyle = el.color || '#fef08a';
+          if (el.shape === 'sparkle4') {
+            drawFourPointSparkle(ctx, 0, 0, 44);
+          } else if (el.shape === 'heart') {
+            drawVectorHeart(ctx, 0, 0, 42);
+          } else if (el.shape === 'pill') {
+            ctx.beginPath();
+            ctx.roundRect(-110, -28, 220, 56, 28);
+            ctx.fill();
+          } else if (el.shape === 'burst') {
+            drawStarBurst(ctx, 0, 0, 12, 48, 24);
+          }
+        }
+
+        // Selection ring in editor mode
+        if (showSelectionHandles && el.id === selectedElementId) {
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 3 / el.scale;
+          ctx.setLineDash([8 / el.scale, 6 / el.scale]);
+          const boxW = el.kind === 'text' ? 240 : 120;
+          const boxH = el.kind === 'text' ? 80 : 120;
+          ctx.strokeRect(-boxW / 2, -boxH / 2, boxW, boxH);
+        }
+
+        ctx.restore();
+      });
+
+      ctx.restore();
+    }
+
+    // Vector Helpers for Strip Graphics
+    function drawFourPointSparkle(ctx, cx, cy, r) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r);
+      ctx.quadraticCurveTo(cx, cy, cx + r * 0.85, cy);
+      ctx.quadraticCurveTo(cx, cy, cx, cy + r);
+      ctx.quadraticCurveTo(cx, cy, cx - r * 0.85, cy);
+      ctx.quadraticCurveTo(cx, cy, cx, cy - r);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawVectorHeart(ctx, cx, cy, size) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + size * 0.35);
+      ctx.bezierCurveTo(cx - size, cy - size * 0.4, cx - size * 0.5, cy - size, cx, cy - size * 0.45);
+      ctx.bezierCurveTo(cx + size * 0.5, cy - size, cx + size, cy - size * 0.4, cx, cy + size * 0.35);
+      ctx.fill();
+    }
+
+    function drawStarBurst(ctx, cx, cy, spikes, outerR, innerR) {
+      let rot = (Math.PI / 2) * 3;
+      const step = Math.PI / spikes;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerR);
+      for (let i = 0; i < spikes; i++) {
+        ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+        rot += step;
+        ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+        rot += step;
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawCameraClapperIcon(ctx, x, y, color) {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      // Camera body
+      ctx.beginPath();
+      ctx.roundRect(x, y + 6, 36, 22, 4);
+      ctx.fill();
+      // Lens cutout
+      ctx.fillStyle = '#181024';
+      ctx.beginPath();
+      ctx.arc(x + 18, y + 17, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // Clapper top arm
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x + 2, y + 3);
+      ctx.lineTo(x + 34, y - 4);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function getCanvasFilterString(filter) {
+      switch (filter) {
+        case 'warm': return 'sepia(0.28) saturate(1.25) brightness(1.04)';
+        case 'bw': return 'grayscale(1) contrast(1.15)';
+        case 'vintage': return 'sepia(0.45) contrast(0.92) brightness(1.02)';
+        case 'vibrant': return 'saturate(1.45) contrast(1.1)';
+        case 'cool': return 'hue-rotate(14deg) saturate(1.12) brightness(1.03)';
+        default: return 'none';
+      }
+    }
+
+    // Render Active Strip in Editor
+    function renderActiveStrip() {
+      const strip = strips[activeStripIndex];
+      drawStripToContext(stripCtx, strip, true);
+
+      // Update status counters
+      const filled = strip.slots.filter(s => !!s.photoId).length;
+      document.getElementById('active-strip-label').textContent = `Editing Strip #${activeStripIndex + 1} of 6`;
+      document.getElementById('active-slot-count').textContent = `${filled} / 3 Photos Filled`;
+      document.getElementById('export-strip-num').textContent = activeStripIndex + 1;
+    }
+
+    // Render Full A4 Landscape Sheet (6 x 2x6 strips arranged cleanly across A4)
+    function renderA4Canvas() {
+      const W = a4Canvas.width;  // 1754 (297mm)
+      const H = a4Canvas.height; // 1240 (210mm)
+
+      a4Ctx.save();
+      a4Ctx.fillStyle = '#ffffff';
+      a4Ctx.fillRect(0, 0, W, H);
+
+      // 6 columns side-by-side on A4 landscape:
+      // Each strip maintains exact 1:3 (2x6 in) aspect ratio
+      const marginX = 38;
+      const gapX = 16;
+      const stripDisplayW = Math.floor((W - marginX * 2 - gapX * 5) / 6); // ~266px
+      const stripDisplayH = stripDisplayW * 3; // ~798px (exact 1:3 ratio)
+      const startY = Math.floor((H - stripDisplayH) / 2);
+
+      const showCutMarks = document.getElementById('cut-marks-toggle')?.checked ?? true;
+
+      // Subtle header guide text in margin
+      if (showCutMarks) {
+        a4Ctx.fillStyle = '#94a3b8';
+        a4Ctx.font = '600 18px Inter, sans-serif';
+        a4Ctx.textAlign = 'center';
+        a4Ctx.fillText('DIGICLICK PHOTOBOOTH • A4 PRINT SHEET (6 × 2×6 INCH STRIPS) • TRIM ALONG GUIDES', W / 2, startY - 36);
+      }
+
+      for (let i = 0; i < 6; i++) {
+        const x = marginX + i * (stripDisplayW + gapX);
+        const y = startY;
+
+        // Render strip into an offscreen 600x1800 canvas then draw scaled onto A4
+        const off = document.createElement('canvas');
+        off.width = STRIP_W;
+        off.height = STRIP_H;
+        drawStripToContext(off.getContext('2d'), strips[i], false);
+
+        a4Ctx.drawImage(off, x, y, stripDisplayW, stripDisplayH);
+
+        // Trim / Crop Marks around each 2x6 strip
+        if (showCutMarks) {
+          a4Ctx.save();
+          a4Ctx.strokeStyle = '#64748b';
+          a4Ctx.lineWidth = 1.5;
+          a4Ctx.setLineDash([6, 4]);
+          a4Ctx.strokeRect(x - 1, y - 1, stripDisplayW + 2, stripDisplayH + 2);
+
+          // Corner ticks
+          a4Ctx.setLineDash([]);
+          a4Ctx.strokeStyle = '#0d0d0d';
+          a4Ctx.lineWidth = 2;
+          const tick = 14;
+          // Top-left tick
+          a4Ctx.beginPath(); a4Ctx.moveTo(x - tick, y); a4Ctx.lineTo(x, y); a4Ctx.moveTo(x, y - tick); a4Ctx.lineTo(x, y); a4Ctx.stroke();
+          // Bottom-right tick
+          a4Ctx.beginPath(); a4Ctx.moveTo(x + stripDisplayW + tick, y + stripDisplayH); a4Ctx.lineTo(x + stripDisplayW, y + stripDisplayH); a4Ctx.moveTo(x + stripDisplayW, y + stripDisplayH + tick); a4Ctx.lineTo(x + stripDisplayW, y + stripDisplayH); a4Ctx.stroke();
+          a4Ctx.restore();
+        }
+      }
+
+      a4Ctx.restore();
+    }
+
+    // Click on A4 Canvas to jump directly into editing that specific strip (#1 - #6)
+    a4Canvas.addEventListener('click', evt => {
+      const rect = a4Canvas.getBoundingClientRect();
+      const clickX = ((evt.clientX - rect.left) / rect.width) * a4Canvas.width;
+      const col = Math.min(5, Math.max(0, Math.floor((clickX / a4Canvas.width) * 6)));
+      selectStripSlot(col);
+      setWorkspaceView('single');
+      showToast(`Switched to Strip #${col + 1}`);
+    });
+
+    // Render Right Sidebar 6-Strip Mini Cards
+    function renderA4SlotsBar() {
+      const grid = document.getElementById('a4-slots-grid');
+      grid.innerHTML = strips.map((st, idx) => {
+        const isSelected = idx === activeStripIndex;
+        const filledCount = st.slots.filter(s => !!s.photoId).length;
+        return `
+          <button
+            onclick="selectStripSlot(${idx})"
+            class="flex flex-col items-center p-1.5 rounded-xl border transition ${
+              isSelected
+                ? 'bg-purple-600/25 border-purple-500 text-white shadow'
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
+            }"
+            title="Edit Strip #${idx + 1}">
+            <span class="text-[11px] font-bold">#${idx + 1}</span>
+            <div class="flex gap-0.5 mt-1">
+              ${[0, 1, 2].map(dot => `
+                <span class="w-1.5 h-1.5 rounded-full ${st.slots[dot]?.photoId ? 'bg-emerald-400' : 'bg-slate-700'}"></span>
+              `).join('')}
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectStripSlot(idx) {
+      activeStripIndex = idx;
+      selectedPhotoSlot = null;
+      selectedElementId = null;
+
+      // Sync left branding inputs to newly selected strip
+      const st = strips[activeStripIndex];
+      document.getElementById('brand-title-input').value = st.brandTitle;
+      document.getElementById('brand-subtitle-input').value = st.brandSubtitle;
+      document.getElementById('brand-icon-toggle').checked = st.showIcon;
+      document.getElementById('brand-wireframe-toggle').checked = st.showWireframe;
+
+      syncInspectorUI();
+      renderAll();
+    }
+
+    function duplicateCurrentToAllSix() {
+      const source = strips[activeStripIndex];
+      for (let i = 0; i < 6; i++) {
+        if (i === activeStripIndex) continue;
+        strips[i] = JSON.parse(JSON.stringify(source));
+        strips[i].id = i;
+      }
+      renderAll();
+      showToast(`Copied Strip #${activeStripIndex + 1} to all 6 A4 slots!`, 'success');
+    }
+
+    function clearCurrentStrip() {
+      strips[activeStripIndex] = createDefaultStrip(activeStripIndex);
+      selectedPhotoSlot = null;
+      selectedElementId = null;
+      syncInspectorUI();
+      renderAll();
+      showToast(`Reset Strip #${activeStripIndex + 1}`);
+    }
+
+    function renderAll() {
+      renderActiveStrip();
+      renderA4SlotsBar();
+      if (workspaceView === 'a4') {
+        renderA4Canvas();
+      }
+    }
+
+    // Export, Preview & Print Actions
+    function getCleanStripDataURL(stripIdx = activeStripIndex) {
+      const off = document.createElement('canvas');
+      off.width = STRIP_W;
+      off.height = STRIP_H;
+      drawStripToContext(off.getContext('2d'), strips[stripIdx], false);
+      return off.toDataURL('image/png');
+    }
+
+    function getCleanA4DataURL() {
+      renderA4Canvas();
+      return a4Canvas.toDataURL('image/png');
+    }
+
+    function downloadActiveStripPNG() {
+      const url = getCleanStripDataURL(activeStripIndex);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DigiClick_2x6_Strip_${activeStripIndex + 1}.png`;
+      a.click();
+      showToast(`Saved Strip #${activeStripIndex + 1} (2×6 PNG)`, 'success');
+    }
+
+    function downloadA4SheetPNG() {
+      const url = getCleanA4DataURL();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DigiClick_A4_6Prints_Sheet.png`;
+      a.click();
+      showToast('Saved A4 6-Strip Print Sheet PNG', 'success');
+    }
+
+    function openPreviewModal(mode) {
+      const modal = document.getElementById('preview-modal');
+      const img = document.getElementById('preview-modal-img');
+      const title = document.getElementById('preview-modal-title');
+      const meta = document.getElementById('preview-modal-meta');
+      const btnStrip = document.getElementById('modal-toggle-strip');
+      const btnA4 = document.getElementById('modal-toggle-a4');
+
+      modal.classList.remove('hidden');
+
+      if (mode === 'strip') {
+        img.src = getCleanStripDataURL(activeStripIndex);
+        title.textContent = `Preview: Strip #${activeStripIndex + 1} (2×6 Inches)`;
+        meta.textContent = 'Resolution: 600 × 1800 px (300 DPI • 2×6 in)';
+        btnStrip.className = 'px-2.5 py-1 rounded text-xs font-semibold bg-purple-600 text-white';
+        btnA4.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-400 hover:text-white';
+      } else {
+        img.src = getCleanA4DataURL();
+        title.textContent = 'Preview: Full A4 Sheet (6 Strips of 2×6 Inches)';
+        meta.textContent = 'Paper Size: A4 Landscape (297mm × 210mm • 6 Prints)';
+        btnA4.className = 'px-2.5 py-1 rounded text-xs font-semibold bg-purple-600 text-white';
+        btnStrip.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-400 hover:text-white';
+      }
+    }
+
+    function closePreviewModal() {
+      document.getElementById('preview-modal').classList.add('hidden');
+    }
+
+    function printA4Sheet() {
+      const a4Url = getCleanA4DataURL();
+      const printArea = document.getElementById('print-area');
+      printArea.innerHTML = `<img src="${a4Url}" alt="A4 Photobooth Print Sheet" />`;
+      const imgEl = printArea.querySelector('img');
+      imgEl.onload = () => {
+        window.print();
+      };
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', async () => {
+      try { await Promise.all(['700 20px Caveat','600 20px Inter','600 20px "Playfair Display"','700 20px "Space Grotesk"'].map(f => document.fonts.load(f))); } catch (e) {}
+      initSidebarUI();
+      renderPhotoTray();
+      resizeCanvasDisplay();
+      renderAll();
+    });
+  </script>
+  <script src="js/vendor/supabase.js"></script>
+  <script type="module">import { boot } from "./js/auth.js"; await boot("editor", "Print layout");</script>
+</body>
+</html>

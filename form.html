@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DigiClick: Register</title><link rel="stylesheet" href="css/global.css"></head><body>
+<main id="app"><form id="f" hidden>
+<label for="name">Full name</label><input id="name" type="text" required autocomplete="off">
+<label for="gs">Grade and section</label><input id="gs" type="text" required autocomplete="off">
+<label for="plat">Where should we send your photos?</label>
+<select id="plat"><option value="facebook_messenger">Facebook Messenger</option><option value="instagram">Instagram</option><option value="gmail">Gmail</option><option value="other">Other</option></select>
+<input id="other" type="text" placeholder="Which platform?" hidden style="margin-top:8px">
+<label for="user">Your username or email on that platform</label><input id="user" type="text" required autocomplete="off">
+<label>May the club post your photos on its page?</label>
+<label class="opt"><input type="radio" name="use" value="true" required>Yes, you may post them</label>
+<label class="opt"><input type="radio" name="use" value="false">No, keep them private</label>
+<label>Choose a package</label><div id="pk"></div>
+<button class="go" style="width:100%;margin-top:24px">Get my ticket</button></form>
+<div id="done" class="done" hidden><p>Your ticket code</p><div class="code" id="code"></div><p>Take this code to the cashier to pay.</p></div></main>
+<script src="js/vendor/supabase.js"></script>
+<script type="module">
+import { boot, ask } from "./js/auth.js"; import { sb } from "./js/supabase.js"; import { send } from "./js/outbox.js";
+const op = await boot("kiosk", "Register for DigiClick");
+const $ = id => document.getElementById(id), f = $("f");
+let prefix = localStorage.dc_prefix;
+while (!prefix) { prefix = (await ask("Name this tablet", { label: "Short code, such as K1" }) || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+localStorage.dc_prefix = prefix;
+const pk = { digital: ["Digital copy only", 20], physical_week: ["Physical copy, next week", 30], physical_day: ["Physical copy, within the day", 45] };
+try { const { data } = await sb.from("price_list").select("package,price_php"); data?.forEach(r => pk[r.package] && (pk[r.package][1] = r.price_php)); } catch {}
+$("pk").innerHTML = Object.entries(pk).map(([k, [l, p]], i) => `<label class="opt"><input type="radio" name="pkg" value="${k}" ${i ? "" : "required"}>${l}<b>Php ${p}</b></label>`).join("");
+f.hidden = false;
+$("plat").onchange = () => { $("other").hidden = $("plat").value !== "other"; $("other").required = !$("other").hidden; };
+f.onsubmit = async e => { e.preventDefault();
+  const n = (+localStorage.dc_n || 0) + 1; localStorage.dc_n = n;
+  const code = `${prefix}-${String(n).padStart(3, "0")}`, v = k => f.querySelector(`[name=${k}]:checked`).value;
+  const args = { p_id: crypto.randomUUID(), p_ticket_code: code, p_device_id: prefix, p_device_created_at: new Date().toISOString(),
+    p_name: $("name").value, p_grade_section: $("gs").value, p_contact_platform: $("plat").value,
+    p_contact_platform_other: $("plat").value === "other" ? $("other").value : null, p_contact_username: $("user").value,
+    p_allow_page_use: v("use") === "true", p_package: v("pkg"), p_operator: op };
+  send("create_ticket", args);
+  $("code").textContent = code; f.hidden = true; $("done").hidden = false; f.reset(); $("other").hidden = true;
+  setTimeout(() => { $("done").hidden = true; $("code").textContent = ""; f.hidden = false; scrollTo(0, 0); }, 15000);
+};
+</script></body></html>
