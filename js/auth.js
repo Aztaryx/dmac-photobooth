@@ -3,10 +3,10 @@ import { startSync } from "./outbox.js";
 export const operator = () => localStorage.getItem("dc_operator") || "";
 const clean = (s) => s.toUpperCase().replace(/[-\s]/g, "");
 export const lock = () => sb.auth.signOut().finally(() => location.reload());
-export function boot(role, title) {
+export function boot(role, title, extra = "") {
   document.body.insertAdjacentHTML(
     "afterbegin",
-    `<header class="bar"><img src="img/dmac-logo-orange-purple-bright.png" alt="DMAC"><h1>${title}</h1><button id="sync" class="ok">Synced</button><button id="lock">Lock</button></header>`,
+    `<header class="bar"><img src="img/dmac-logo-orange-purple-bright.png" alt="DMAC"><h1>${title}</h1>${extra}<button id="sync" class="ok">Synced</button><button id="lock">Lock</button></header>`,
   );
   document.getElementById("lock").onclick = lock;
   return new Promise((done) => {
@@ -15,7 +15,7 @@ export function boot(role, title) {
     g.innerHTML = `<form><img src="img/dmac-logo-orange-purple-bright.png" alt="DMAC"><h2>${title}</h2>
       <label for="op">Your name</label><input id="op" type="text" autocomplete="off" required>
       <label for="pin">PIN</label><input id="pin" class="pin" type="password" autocomplete="off" maxlength="7" required>
-      <p class="err" id="e"></p><button class="go" style="width:100%">Unlock</button></form>`;
+      <p class="err" id="e"></p><button class="go shine" style="width:100%">Unlock</button></form>`;
     document.body.append(g);
     const f = g.querySelector("form"),
       e = g.querySelector("#e");
@@ -28,6 +28,9 @@ export function boot(role, title) {
         password: clean(f.pin.value),
       });
       if (error) {
+        g.classList.remove("shake");
+        void g.offsetWidth;
+        g.classList.add("shake");
         e.textContent = /fetch|network/i.test(error.message)
           ? "No connection. Signing in needs internet."
           : "Wrong PIN. Check it and try again.";
@@ -39,7 +42,8 @@ export function boot(role, title) {
         return;
       }
       localStorage.setItem("dc_operator", f.op.value.trim());
-      g.remove();
+      g.classList.add("out");
+      setTimeout(() => g.remove(), 420);
       startSync();
       done(f.op.value.trim());
     };
@@ -52,6 +56,13 @@ export function ask(title, { label = "", type = "text", value = "" } = {}) {
     d.innerHTML = `<form method="dialog"><h3>${title}</h3>${label ? `<label>${label}</label><input type="${type}" value="${value}" required>` : ""}<div class="row" style="margin-top:16px"><button class="go" value="y">Confirm</button><button value="n" formnovalidate>Cancel</button></div></form>`;
     document.body.append(d);
     d.showModal();
+    // Play a short closing animation before the dialog actually closes.
+    d.querySelector("form").onsubmit = (ev) => {
+      ev.preventDefault();
+      const v = ev.submitter?.value || "n";
+      d.classList.add("closing");
+      setTimeout(() => d.close(v), matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 200);
+    };
     d.onclose = () => {
       const v = d.returnValue === "y" ? (d.querySelector("input")?.value ?? true) : null;
       d.remove();

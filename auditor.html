@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/motion.css" />
     <title>DigiClick: Auditor</title>
   </head>
   <body>
@@ -18,6 +19,7 @@
     <script src="js/vendor/supabase.js"></script>
     <script type="module">
       import { boot, ask, esc } from "./js/auth.js";
+      import { stagger, countUp } from "./js/ui.js";
       import { sb } from "./js/supabase.js";
       const op = await boot("auditor", "Auditor");
       const v = document.getElementById("v"),
@@ -67,8 +69,10 @@
               .filter((x) => x.kind === "payment")
               .reduce((s, x) => s + x.amount_php, 0),
             ref = p.data.filter((x) => x.kind === "refund").reduce((s, x) => s - x.amount_php, 0);
-          const S = (l, x) => `<div class="card"><div class="stat">${x}</div>${l}</div>`;
+          const S = (l, x) => `<div class="card"><div class="stat" data-count="${x}">${x}</div>${l}</div>`;
           v.innerHTML = `<div class="stats">${S("Cash collected (Php)", pay - ref)}${S("Refunds (Php)", ref)}${S("Voided tickets", n.void || 0)}${S("All tickets", t.data.length)}</div><h2>Tickets by status</h2><div class="stats">${["awaiting_payment", "paid", "editing", "ready", "delivered"].map((s) => S(s.replace("_", " "), n[s] || 0)).join("")}</div>`;
+          stagger(v, ".stats .card");
+          countUp(v);
         },
         async raw() {
           v.innerHTML = `<select id="tb" style="max-width:260px">${[

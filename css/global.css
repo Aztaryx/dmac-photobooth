@@ -19,50 +19,68 @@
   src: url(../fonts/rajdhani-latin-700-normal.woff2);
 }
 :root {
-  --bg: #0d0d0d;
-  --surface: #1a1a1a;
+  --bg: #17092f;
+  --bg-panel: #22103f;
+  --surface: #2a1552;
+  --line: #4c2a8c;
+  --line-soft: #3b1f6f;
   --orange: #f97316;
+  --orange-deep: #c2410c;
+  --peach: #f8b672;
   --purple: #4c1d95;
   --purple-bright: #8b5cf6;
-  --text: #f0f0f0;
-  --muted: #888;
-  --bad: #f87171;
+  --lilac: #c4b5fd;
+  --text: #ffffff;
+  --muted: #bdade3;
+  --ink: #17092f;
+  --ink-muted: #63537c;
+  --bad: #b91c1c;
+  --bad-soft: #f4a9a9;
+  --ok: #34d399;
   --font: "Chakra Petch", sans-serif;
   --font2: "Rajdhani", sans-serif;
-  --nav-h: 80px;
+  --nav-h: 88px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 * {
   box-sizing: border-box;
 }
+html {
+  background: var(--bg);
+}
 body {
   margin: 0;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   font: 500 18px/1.5 var(--font);
   min-height: 100vh;
 }
+
+/* ---------- Header ---------- */
 header.bar {
   height: var(--nav-h);
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 20px;
-  border-bottom: 2px solid var(--purple);
+  gap: 18px;
+  padding: 0 28px;
+  border-bottom: 2px solid var(--line);
 }
 header.bar img {
-  height: 48px;
+  height: 56px;
 }
 header.bar h1 {
-  font: 700 26px var(--font2);
+  font: 700 32px var(--font2);
   margin: 0;
   flex: 1;
 }
 :where(main) {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 36px 40px;
+  max-width: 1280px;
   margin: auto;
 }
+
+/* ---------- Buttons ---------- */
 button,
 input,
 select,
@@ -73,79 +91,165 @@ textarea {
 :where(button) {
   min-height: 52px;
   padding: 0 22px;
-  border-radius: 8px;
-  border: 2px solid var(--purple);
+  border-radius: 12px;
+  border: 2px solid var(--line);
   background: var(--surface);
   cursor: pointer;
 }
 button.go {
   background: var(--orange);
   border-color: var(--orange);
-  color: #0d0d0d;
+  color: var(--ink);
+  font-weight: 700;
+}
+button.pill,
+#lock {
+  border-radius: 999px;
+}
+#lock {
+  min-height: 48px;
+  padding: 0 22px;
+  background: transparent;
+  border-color: var(--purple-bright);
+  color: var(--text);
+}
+button.pri {
+  background: var(--purple);
+  border-color: var(--purple);
+  color: #fff;
+  font-weight: 700;
+}
+button.ghost {
+  background: transparent;
+  border-color: var(--purple);
+  color: var(--purple);
   font-weight: 700;
 }
 button.warn {
+  background: transparent;
   border-color: var(--bad);
   color: var(--bad);
+}
+button.grow {
+  flex: 1;
 }
 :focus-visible {
   outline: 3px solid var(--purple-bright);
   outline-offset: 2px;
 }
+
+/* ---------- Form controls ---------- */
 :where(label) {
   display: block;
-  margin: 18px 0 6px;
-  color: var(--purple-bright);
+  margin: 22px 0 6px;
+  color: var(--muted);
+  font-size: 16px;
 }
 :where(input[type="text"], input[type="number"], input[type="password"], select) {
   width: 100%;
-  min-height: 52px;
-  padding: 10px 14px;
-  background: var(--surface);
-  border: 2px solid #333;
-  border-radius: 8px;
+  min-height: 58px;
+  padding: 10px 18px;
+  background: #fff;
+  color: var(--ink);
+  border: 2px solid transparent;
+  border-radius: 14px;
+}
+input::placeholder {
+  color: var(--ink-muted);
 }
 .opt {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
-  margin: 8px 0;
+  min-height: 58px;
+  padding: 12px 20px;
+  margin: 10px 0;
   background: var(--surface);
-  border: 2px solid #333;
-  border-radius: 8px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
   color: var(--text);
   cursor: pointer;
 }
-.opt:has(input:checked) {
-  border-color: var(--orange);
-}
+/* The real radio stays in the DOM (keyboard, validation) but sits invisibly over the card. */
 .opt input {
-  width: 24px;
-  height: 24px;
-  accent-color: var(--orange);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.opt:has(input:checked) {
+  background: #fff;
+  border-color: var(--orange);
+  color: var(--ink);
+}
+.opt:has(input:focus-visible) {
+  outline: 3px solid var(--purple-bright);
+  outline-offset: 2px;
 }
 .opt b {
   margin-left: auto;
-  font: 700 24px var(--font2);
-  color: var(--orange);
+  font: 700 36px/1 var(--font2);
 }
+.opt:has(input:checked) b {
+  color: var(--orange-deep);
+}
+.opt.ctr {
+  justify-content: center;
+  margin: 0;
+}
+.opts2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.opts2 .opt {
+  margin: 0;
+  justify-content: center;
+}
+
+/* ---------- Sync status + lock ---------- */
 #sync {
   margin-left: auto;
-  padding: 8px 14px;
+  padding: 4px 6px;
   min-height: 0;
-  font-size: 15px;
-  border: 2px solid #333;
+  font-size: 17px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: default;
+}
+#sync::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex: none;
 }
 #sync.wait {
-  border-color: var(--orange);
+  color: var(--peach);
+}
+#sync.wait::before {
+  background: var(--orange);
 }
 #sync.off {
-  border-color: var(--bad);
+  color: var(--bad-soft);
+}
+#sync.off::before {
+  background: #f87171;
 }
 #sync.ok {
   color: var(--muted);
 }
+
+/* ---------- PIN gate ---------- */
 .gate {
   position: fixed;
   inset: 0;
@@ -155,10 +259,18 @@ button.warn {
   z-index: 9;
 }
 .gate form {
-  width: min(420px, 92vw);
+  width: min(440px, 92vw);
+  padding: 34px 32px 30px;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 24px;
 }
 .gate img {
-  height: 72px;
+  height: 84px;
+}
+.gate h2 {
+  font: 700 34px var(--font2);
+  margin: 10px 0 0;
 }
 .gate .pin {
   font: 700 40px var(--font2);
@@ -166,71 +278,158 @@ button.warn {
   text-align: center;
 }
 .err {
-  color: var(--bad);
+  color: var(--bad-soft);
   min-height: 1.5em;
 }
+
+/* ---------- Ticket code (kept for any page that still shows it) ---------- */
 .code {
-  font: 700 clamp(72px, 18vw, 160px)/1 var(--font2);
+  font: 700 clamp(72px, 18vw, 160px) / 1 var(--font2);
   color: var(--orange);
   letter-spacing: 0.04em;
 }
-.done {
-  text-align: center;
-  padding: 60px 0;
-}
+
+/* ---------- Columns and cards ---------- */
 .cols {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+}
+.cols.panels {
   gap: 20px;
 }
 .col h2 {
-  font: 700 24px var(--font2);
-  margin: 0 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--purple);
+  font: 700 30px/1.1 var(--font2);
+  margin: 0 0 16px;
+}
+.col h2.await {
+  color: var(--peach);
+}
+.col h2.paid {
+  color: var(--lilac);
+}
+.panels .col {
+  background: var(--bg-panel);
+  border-radius: 22px;
+  padding: 20px 16px 6px;
+  min-height: 420px;
+  align-self: start;
+}
+.n {
+  display: inline-block;
 }
 .card {
-  background: var(--surface);
-  border-left: 6px solid var(--purple);
-  border-radius: 8px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
+  background: #fff;
+  color: var(--ink);
+  border-radius: 22px;
+  padding: 18px 18px 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.card .name {
+  font: 700 28px/1.15 var(--font2);
+  margin: 0;
+}
+.card .meta {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+.card .line {
+  margin: 6px 0 0;
+  font-size: 17px;
 }
 .card .c {
   font: 700 30px var(--font2);
-  color: var(--orange);
+  color: var(--orange-deep);
 }
 .card small,
 .empty {
+  color: var(--ink-muted);
+}
+.empty {
   color: var(--muted);
+}
+.card.dark {
+  background: var(--surface);
+  color: var(--text);
+}
+.card.dark .meta {
+  color: var(--muted);
+}
+.card.dark button.ghost {
+  border-color: var(--purple-bright);
+  color: #fff;
+  font-weight: 500;
+}
+.card.dark button.warn {
+  border-color: #e09b9b;
+  color: var(--bad-soft);
+}
+.card.done {
+  opacity: 0.5;
 }
 .row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: 14px;
 }
+.row > button {
+  min-height: 50px;
+  padding: 0 18px;
+}
+.panels main,
+main.wide {
+  padding: 24px;
+}
+.panels .name {
+  font-size: 24px;
+}
+.panels .meta {
+  font-size: 15px;
+}
+.panels .row > button {
+  flex: 1 1 100%;
+}
+.panels .col h2 {
+  font-size: 28px;
+}
+.card .row > button.pri {
+  border-radius: 14px;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 14px;
+  border-radius: 99px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 10px 0 0;
+}
+.card .badge + .row {
+  margin-top: 12px;
+}
+
+/* ---------- Dialog ---------- */
 dialog {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--purple);
-  border-radius: 12px;
-  width: min(440px, 92vw);
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  padding: 24px 26px;
+  width: min(460px, 92vw);
+}
+dialog h3 {
+  font: 700 30px var(--font2);
+  margin: 0;
 }
 dialog::backdrop {
-  background: #000a;
+  background: rgba(10, 3, 24, 0.7);
 }
-@media (prefers-reduced-motion: no-preference) {
-  .done {
-    animation: in 0.5s var(--ease-out);
-  }
-  @keyframes in {
-    from {
-      opacity: 0;
-      transform: scale(0.96);
-    }
-  }
-}
+
+/* ---------- Auditor tables, tabs, stats ---------- */
 table {
   border-collapse: collapse;
   width: 100%;
@@ -239,45 +438,45 @@ table {
 th,
 td {
   padding: 8px 10px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--line-soft);
   text-align: left;
   white-space: nowrap;
 }
 th {
-  color: var(--purple-bright);
+  color: var(--lilac);
 }
 .tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
+}
+.tabs button {
+  border-radius: 999px;
+  background: transparent;
 }
 .tabs button[aria-selected="true"] {
   border-color: var(--orange);
   color: var(--orange);
 }
-.badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 99px;
-  border: 2px solid var(--orange);
-  color: var(--orange);
-  font-size: 14px;
-  margin-left: 6px;
-}
 .stat {
-  font: 700 44px var(--font2);
-  color: var(--orange);
+  font: 700 48px/1.1 var(--font2);
+  color: var(--orange-deep);
 }
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
 }
-.card.done {
-  opacity: 0.5;
-  border-left-color: var(--orange);
+.stats .card {
+  margin: 0;
 }
+.pin {
+  font: 700 26px var(--font2);
+  letter-spacing: 0.15em;
+}
+
+/* ---------- Background canvas (BGStack, optional) ---------- */
 #bg {
   position: fixed;
   inset: 0;
@@ -289,6 +488,6 @@ th {
 #bg-dim {
   position: fixed;
   inset: 0;
-  background: rgba(13, 13, 13, 0.55);
+  background: rgba(23, 9, 47, 0.9);
   z-index: -1;
 }

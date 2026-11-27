@@ -1,0 +1,612 @@
+/* All motion lives here. Nothing in this file runs for people who ask for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  /* ---------- Page to page: crossfade, with the logo gliding between pages ---------- */
+  @view-transition {
+    navigation: auto;
+  }
+  header.bar img,
+  .brand .logo {
+    view-transition-name: dc-logo;
+  }
+  ::view-transition-old(root) {
+    animation: 0.22s ease-in both fadeOut;
+  }
+  ::view-transition-new(root) {
+    animation: 0.4s var(--ease-out) both rise;
+  }
+  ::view-transition-group(dc-logo) {
+    animation-duration: 0.5s;
+    animation-timing-function: var(--ease-out);
+  }
+
+  /* ---------- Ambient glow behind every booth page ---------- */
+  html:not(.dark) body::before,
+  html:not(.dark) body::after {
+    content: "";
+    position: fixed;
+    z-index: -3;
+    pointer-events: none;
+    width: 70vmax;
+    height: 70vmax;
+    border-radius: 50%;
+  }
+  html:not(.dark) body::before {
+    right: -28vmax;
+    top: -34vmax;
+    background: radial-gradient(closest-side, rgba(249, 115, 22, 0.1), transparent);
+    animation: driftA 26s ease-in-out infinite alternate;
+  }
+  html:not(.dark) body::after {
+    left: -30vmax;
+    bottom: -38vmax;
+    background: radial-gradient(closest-side, rgba(139, 92, 246, 0.26), transparent);
+    animation: driftB 32s ease-in-out infinite alternate;
+  }
+  @keyframes driftA {
+    to {
+      transform: translate(-14vmax, 10vmax) scale(1.18);
+    }
+  }
+  @keyframes driftB {
+    to {
+      transform: translate(16vmax, -12vmax) scale(1.12);
+    }
+  }
+
+  /* ---------- Shared keyframes ---------- */
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(22px);
+    }
+  }
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.045);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes bump {
+    40% {
+      transform: scale(1.5);
+    }
+  }
+  .bump {
+    animation: bump 0.45s var(--ease-spring);
+  }
+
+  /* ---------- Header ---------- */
+  header.bar {
+    animation: 0.6s var(--ease-out) both slideDown;
+  }
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+  header.bar > img {
+    animation: 0.9s var(--ease-spring) 0.15s both logoIn;
+  }
+  @keyframes logoIn {
+    from {
+      opacity: 0;
+      transform: scale(0.6) rotate(-10deg);
+    }
+  }
+  header.bar h1 {
+    animation: 0.6s var(--ease-out) 0.2s both rise;
+  }
+  header.bar > :not(img, h1) {
+    animation: 0.5s var(--ease-out) 0.3s both fadeIn;
+  }
+  main {
+    animation: 0.55s var(--ease-out) 0.1s both rise;
+  }
+  .home,
+  .home-wrap {
+    animation: none;
+  }
+
+  /* ---------- Buttons ---------- */
+  html:not(.dark) button {
+    position: relative;
+    overflow: hidden;
+    transition:
+      transform 0.18s var(--ease-out),
+      box-shadow 0.25s,
+      background-color 0.2s,
+      border-color 0.2s,
+      filter 0.2s;
+  }
+  html:not(.dark) button:active {
+    transform: scale(0.96);
+  }
+  @media (hover: hover) {
+    button.go:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 26px rgba(249, 115, 22, 0.4);
+    }
+    button.pri:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(76, 29, 149, 0.5);
+      filter: brightness(1.15);
+    }
+    button.ghost:hover,
+    button.warn:hover,
+    #lock:hover {
+      transform: translateY(-2px);
+      background: rgba(139, 92, 246, 0.14);
+    }
+    button.warn:hover {
+      background: rgba(185, 28, 28, 0.1);
+    }
+    .tabs button:hover {
+      transform: translateY(-2px);
+    }
+    .opt:hover {
+      border-color: var(--purple-bright);
+      transform: translateY(-2px);
+    }
+  }
+  .opt {
+    transition:
+      transform 0.2s var(--ease-out),
+      background-color 0.25s,
+      border-color 0.25s,
+      color 0.25s;
+  }
+  .opt:active {
+    transform: scale(0.98);
+  }
+  .opt:has(input:checked) {
+    animation: pop 0.4s var(--ease-spring);
+  }
+  .opt b {
+    transition: color 0.25s;
+  }
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.28;
+    pointer-events: none;
+    transform: scale(0);
+    animation: ripple 0.65s ease-out forwards;
+  }
+  @keyframes ripple {
+    to {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+  /* Sheen that sweeps across the main orange buttons every few seconds. */
+  button.shine::after,
+  .station.primary::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -40%;
+    width: 30%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    transform: skewX(-18deg);
+    pointer-events: none;
+    animation: sheen 4.5s ease-in-out 1.2s infinite;
+  }
+  @keyframes sheen {
+    0% {
+      left: -40%;
+    }
+    32%,
+    100% {
+      left: 140%;
+    }
+  }
+
+  /* ---------- Inputs ---------- */
+  input[type="text"],
+  input[type="number"],
+  input[type="password"] {
+    transition:
+      border-color 0.2s,
+      box-shadow 0.25s,
+      transform 0.2s var(--ease-out);
+  }
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  input[type="password"]:focus {
+    outline: none;
+    border-color: var(--orange);
+    box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.3);
+    transform: translateY(-1px);
+  }
+  label:has(+ input:focus) {
+    color: var(--peach);
+  }
+  label {
+    transition: color 0.2s;
+  }
+
+  /* ---------- Sync dot ---------- */
+  #sync::before {
+    animation: dot 2.4s ease-out infinite;
+  }
+  #sync.wait::before {
+    animation: dot 0.9s ease-out infinite;
+  }
+  #sync.off::before {
+    animation: none;
+  }
+  @keyframes dot {
+    0% {
+      box-shadow: 0 0 0 0 var(--pulse, rgba(52, 211, 153, 0.6));
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 9px transparent;
+    }
+  }
+  #sync.wait {
+    --pulse: rgba(249, 115, 22, 0.7);
+  }
+
+  /* ---------- PIN gate ---------- */
+  .gate form {
+    animation: 0.7s var(--ease-spring) both gateIn;
+  }
+  .gate img {
+    animation: 3.5s ease-in-out infinite alternate bob;
+  }
+  .gate.out {
+    animation: 0.4s ease-in forwards gateOut;
+    pointer-events: none;
+  }
+  .gate.shake form {
+    animation: 0.45s ease-in-out shake;
+  }
+  @keyframes gateIn {
+    from {
+      opacity: 0;
+      transform: translateY(40px) scale(0.92);
+    }
+  }
+  @keyframes gateOut {
+    to {
+      opacity: 0;
+      transform: scale(1.06);
+    }
+  }
+  @keyframes shake {
+    20%,
+    60% {
+      transform: translateX(-12px);
+    }
+    40%,
+    80% {
+      transform: translateX(12px);
+    }
+  }
+  @keyframes bob {
+    to {
+      transform: translateY(-6px);
+    }
+  }
+  .err:not(:empty) {
+    animation: 0.3s var(--ease-out) rise;
+  }
+
+  /* ---------- Cards ---------- */
+  .card.enter,
+  .empty.enter {
+    animation: 0.6s var(--ease-spring) both cardIn;
+    animation-delay: calc(var(--i, 0) * 80ms);
+  }
+  @keyframes cardIn {
+    from {
+      opacity: 0;
+      transform: translateY(28px) scale(0.94);
+    }
+  }
+  .card.leave {
+    overflow: hidden;
+    pointer-events: none;
+    animation: 0.4s ease-in forwards cardOut;
+  }
+  @keyframes cardOut {
+    from {
+      max-height: 420px;
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-36px) scale(0.92);
+      max-height: 0;
+      margin-bottom: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+  }
+  .card.flash {
+    animation: 0.9s ease-out flash;
+  }
+  @keyframes flash {
+    from {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.8);
+    }
+    to {
+      box-shadow: 0 0 0 18px rgba(249, 115, 22, 0);
+    }
+  }
+  .col h2 {
+    animation: 0.6s var(--ease-out) both rise;
+  }
+  .cols > .col:nth-child(2) h2 {
+    animation-delay: 0.08s;
+  }
+  .cols > .col:nth-child(3) h2 {
+    animation-delay: 0.16s;
+  }
+  .panels .col {
+    animation: 0.7s var(--ease-out) both rise;
+  }
+  .panels .col:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  .panels .col:nth-child(3) {
+    animation-delay: 0.2s;
+  }
+  .stats .card,
+  #v > .card {
+    animation: 0.6s var(--ease-spring) both cardIn;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+  #v > * {
+    animation: 0.45s var(--ease-out) both rise;
+  }
+  .badge {
+    animation: 2.4s ease-in-out infinite badgePulse;
+  }
+  @keyframes badgePulse {
+    50% {
+      box-shadow: 0 0 0 6px rgba(185, 28, 28, 0.25);
+    }
+  }
+
+  /* ---------- Dialog ---------- */
+  dialog[open] {
+    animation: 0.4s var(--ease-spring) both dlgIn;
+  }
+  dialog[open]::backdrop {
+    animation: 0.3s ease-out both fadeIn;
+  }
+  dialog.closing {
+    animation: 0.2s ease-in forwards dlgOut;
+  }
+  dialog.closing::backdrop {
+    animation: 0.2s ease-in forwards fadeOut;
+  }
+  @keyframes dlgIn {
+    from {
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+    }
+  }
+  @keyframes dlgOut {
+    to {
+      opacity: 0;
+      transform: translateY(14px) scale(0.95);
+    }
+  }
+
+  /* ---------- Home ---------- */
+  .brand .logo-wrap::before {
+    animation: 4s ease-in-out infinite alternate glow;
+  }
+  .brand .logo {
+    animation:
+      1s var(--ease-spring) 0.1s both logoIn,
+      6s ease-in-out 1.2s infinite alternate float;
+  }
+  @keyframes float {
+    to {
+      transform: translateY(-12px) rotate(1.2deg);
+    }
+  }
+  @keyframes glow {
+    from {
+      opacity: 0.5;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+  }
+  .brand h1 .w1 {
+    display: inline-block;
+    animation: 0.8s var(--ease-out) 0.3s both rise;
+  }
+  .brand h1 .w2 {
+    display: inline-block;
+    background: linear-gradient(100deg, var(--orange) 40%, #fdba74 50%, var(--orange) 60%) 100% 0 / 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation:
+      0.8s var(--ease-out) 0.45s both rise,
+      5s ease-in-out 1.4s infinite textsheen;
+  }
+  @keyframes textsheen {
+    0% {
+      background-position: 100% 0;
+    }
+    40%,
+    100% {
+      background-position: 0 0;
+    }
+  }
+  .brand p {
+    animation: 0.8s var(--ease-out) 0.65s both rise;
+  }
+  .station {
+    animation: 0.7s var(--ease-spring) both slideLeft;
+    animation-delay: calc(0.25s + var(--i, 0) * 0.1s);
+    transition:
+      transform 0.25s var(--ease-out),
+      background-color 0.25s,
+      border-color 0.25s,
+      box-shadow 0.25s;
+  }
+  @keyframes slideLeft {
+    from {
+      opacity: 0;
+      transform: translateX(70px);
+    }
+  }
+  @media (hover: hover) {
+    .station:hover {
+      transform: translateX(-8px);
+      border-color: var(--purple-bright);
+      background: #351b69;
+    }
+    .station.primary:hover {
+      background: #fb8a3c;
+      box-shadow: 0 16px 40px rgba(249, 115, 22, 0.4);
+    }
+  }
+  .station:active {
+    transform: scale(0.98);
+  }
+  .station.primary .arrow {
+    animation: 1.6s ease-in-out 1s infinite nudge;
+  }
+  .station:hover .arrow {
+    transform: translateX(8px);
+  }
+  @keyframes nudge {
+    50% {
+      transform: translateX(10px);
+    }
+  }
+  .cam-link {
+    animation: 0.8s var(--ease-out) 1s both fadeIn;
+  }
+
+  /* ---------- Register form ---------- */
+  #f:not([hidden]) .fx {
+    animation: 0.6s var(--ease-out) both rise;
+    animation-delay: calc(var(--i, 0) * 55ms);
+  }
+  #other:not([hidden]) {
+    animation: 0.4s var(--ease-spring) both rise;
+  }
+  #f button.go[type="submit"],
+  #f button.go:not([type]) {
+    transition:
+      transform 0.18s var(--ease-out),
+      box-shadow 0.25s;
+  }
+  #f.sending button.go {
+    animation: 0.5s ease-in-out infinite pop;
+  }
+
+  /* ---------- Sent screen ---------- */
+  .sent:not([hidden]) {
+    animation: 0.75s var(--ease-out) both reveal;
+  }
+  @keyframes reveal {
+    from {
+      clip-path: circle(0 at var(--cx, 50%) var(--cy, 80%));
+    }
+    to {
+      clip-path: circle(150vmax at var(--cx, 50%) var(--cy, 80%));
+    }
+  }
+  .sent .seal {
+    animation: 0.7s var(--ease-spring) 0.35s both sealIn;
+  }
+  @keyframes sealIn {
+    from {
+      opacity: 0;
+      transform: scale(0) rotate(-120deg);
+    }
+  }
+  .sent .seal path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: 0.5s ease-out 0.8s forwards draw;
+  }
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  .sent .ring {
+    animation: 2.6s ease-out 0.9s infinite ripple2;
+  }
+  .sent .ring.r2 {
+    animation-delay: 1.5s;
+  }
+  .sent .ring.r3 {
+    animation-delay: 2.1s;
+  }
+  @keyframes ripple2 {
+    from {
+      opacity: 0.45;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(2.1);
+    }
+  }
+  .sent h2 span {
+    display: inline-block;
+    animation: 0.7s var(--ease-spring) both letterIn;
+    animation-delay: calc(0.65s + var(--j, 0) * 70ms);
+  }
+  @keyframes letterIn {
+    from {
+      opacity: 0;
+      transform: translateY(70px) scale(0.5) rotate(8deg);
+    }
+  }
+  .sent p {
+    animation: 0.6s var(--ease-out) 1.05s both rise;
+  }
+  .sent p + p {
+    animation-delay: 1.15s;
+  }
+  .sent #next {
+    animation: 0.6s var(--ease-out) 1.3s both rise;
+  }
+  .sent #next .prog {
+    animation: 15s linear 1.3s both fill;
+  }
+  @keyframes fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  .sent.leaving {
+    animation: 0.35s ease-in forwards fadeOut;
+  }
+}

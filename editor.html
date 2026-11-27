@@ -4,12 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/motion.css" />
     <title>DigiClick: Editor</title>
   </head>
   <body>
-    <main>
-      <p><button class="go" onclick="location = 'layout.html'">Open print layout</button></p>
-      <div class="cols">
+    <main class="wide">
+      <div class="cols panels">
         <section class="col">
           <h2>To edit</h2>
           <div id="paid"></div>
@@ -29,7 +29,13 @@
       import { boot, ask, esc } from "./js/auth.js";
       import { sb } from "./js/supabase.js";
       import { send, onSynced } from "./js/outbox.js";
-      const op = await boot("editor", "Editor");
+      import { reconcile } from "./js/ui.js";
+      const op = await boot(
+        "editor",
+        "Editor",
+        `<button class="go pill shine" id="layout" style="white-space:nowrap">Open print layout</button>`,
+      );
+      document.getElementById("layout").onclick = () => (location = "layout.html");
       const P = {
         facebook_messenger: "Messenger",
         instagram: "Instagram",
@@ -37,7 +43,7 @@
         other: "Other",
       };
       function btns(x) {
-        const b = (d, t, c = "go") =>
+        const b = (d, t, c = "pri") =>
           `<button class="${c}" data-do="${d}" data-id="${x.id}" data-ch="${x.contact_platform}">${t}</button>`;
         if (x.status === "paid") return b("editing", "Start editing");
         if (x.status === "editing") return b("ready", "Mark ready");
@@ -45,7 +51,7 @@
         if (x.print_status === "to_print") o.push(b("printed", "Mark printed"));
         if (x.print_status === "printed") o.push(b("handed_over", "Mark handed over"));
         if (x.print_status === "not_applicable")
-          o.push(b("send", "Log digital send", ""), b("delivered", "Mark delivered"));
+          o.push(b("send", "Log digital send", "ghost"), b("delivered", "Mark delivered"));
         return o.join("");
       }
       async function load() {
@@ -58,14 +64,16 @@
           .order("created_at");
         if (error) return;
         for (const s of ["paid", "editing", "ready"])
-          document.getElementById(s).innerHTML =
-            data
-              .filter((x) => x.status === s)
-              .map(
-                (x) =>
-                  `<div class="card"><div class="c">${esc(x.ticket_code)}${x.allow_page_use ? "" : "<span class=badge>Do not post</span>"}</div>${esc(x.name)}<br><small>${x.package.replace("_", " ")}${s === "ready" ? ", " + (x.print_status === "not_applicable" ? "send to " + (x.contact_platform === "other" ? esc(x.contact_platform_other) : P[x.contact_platform]) + ": " + esc(x.contact_username) : x.print_status.replace("_", " ")) : ""}</small><div class="row">${btns(x)}</div></div>`,
-              )
-              .join("") || "<p class=empty>Nothing here.</p>";
+          reconcile(
+            document.getElementById(s),
+            data.filter((x) => x.status === s),
+            {
+              key: (x) => x.id,
+              empty: "Nothing here.",
+              html: (x) =>
+                `<h3 class="name">${esc(x.name)}</h3><p class="meta">${x.package.replace("_", " ")}${s === "ready" ? ", " + (x.print_status === "not_applicable" ? "send to " + (x.contact_platform === "other" ? esc(x.contact_platform_other) : P[x.contact_platform]) + ": " + esc(x.contact_username) : x.print_status.replace("_", " ")) : ""} · ${esc(x.ticket_code)}</p>${x.allow_page_use ? "" : "<span class=badge>Do not post</span>"}<div class="row">${btns(x)}</div>`,
+            },
+          );
       }
       document.querySelector("main").onclick = async (e) => {
         const b = e.target.closest("button");
